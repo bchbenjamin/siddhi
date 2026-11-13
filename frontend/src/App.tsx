@@ -1,7 +1,7 @@
+ 'use client';
+
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import '@fontsource-variable/inter';
-import './styles/index.css';
 
 import { AuthProvider, useAuth } from './app/AuthContext';
 import { ProtectedRoute } from './app/ProtectedRoute';

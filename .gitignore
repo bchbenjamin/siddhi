@@ -9,6 +9,7 @@ __pycache__/
 htmlcov/
 node_modules/
 dist/
+.next/
 playwright-report/
 test-results/
 var/uploads/

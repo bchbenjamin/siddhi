@@ -8,7 +8,7 @@ The repository contains:
 
 - A FastAPI/PostgreSQL backend with cookie-based authentication and role-based
   access control.
-- A React/TypeScript/Vite frontend with the guardian and staff view families.
+- A Next.js App Router frontend with the guardian and staff view families.
 - Alembic migrations and synthetic demo data for local testing.
 - Excel IEP workbook export support.
 
@@ -17,9 +17,9 @@ The repository contains:
 ```text
 backend/       FastAPI API, SQLAlchemy models, migrations, tests
 docs/          Design, implementation, local setup, and schema documentation
-frontend/      React + TypeScript + Vite application
+frontend/      Next.js App Router + React + TypeScript application
 scripts/       Repeatable local startup helpers
-vercel.json    Vercel configuration for the frontend
+vercel.json    Vercel configuration for the Next.js application
 ```
 
 ## Requirements
@@ -68,7 +68,7 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173/login`.
+Open `http://localhost:3000/login`.
 
 For the full local walkthrough, see
 [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md).
@@ -101,12 +101,13 @@ All seeded faculty IDs:
 - OpenAPI in development: `GET /docs`
 - API prefix: `/api/v1`
 - Authentication uses secure HttpOnly access and refresh cookies.
-- The frontend uses `/api/v1` locally through the Vite proxy.
+- The frontend uses `/api/v1` through the Next.js same-origin API bridge.
+- Set `BACKEND_URL` for the Next.js server to reach FastAPI.
 
 To point a separately deployed frontend at a deployed API, set:
 
 ```text
-VITE_API_BASE_URL=https://api.example.com/api/v1
+NEXT_PUBLIC_API_BASE_URL=https://api.example.com/api/v1
 ```
 
 The API must allow the deployed frontend origin in its CORS configuration and
@@ -152,17 +153,21 @@ cd backend
 
 Backend tests require a reachable PostgreSQL database configured by `.env`.
 
-## Vercel deployment
+## Next.js and Vercel deployment
 
-The repository is configured for a Vercel-hosted frontend through
+The repository is configured for a Vercel-hosted Next.js application through
 [vercel.json](vercel.json). In Vercel, import the repository and configure:
 
-- **Framework preset:** Vite
+- **Framework preset:** Next.js
 - **Build command:** already supplied by `vercel.json`
-- **Output directory:** already supplied by `vercel.json`
-- **Environment variable:** `VITE_API_BASE_URL=https://<your-api-host>/api/v1`
+- **Output directory:** managed by Next.js
+- **Environment variable:** `NEXT_PUBLIC_API_BASE_URL=https://<your-api-host>/api/v1` (optional; use the same-origin bridge by default)
+- **Environment variable:** `BACKEND_URL=https://<your-api-host>`
 
-The FastAPI application and PostgreSQL database should be deployed separately
+The Next.js application owns the browser UI and same-origin API bridge. The
+current domain logic and PostgreSQL access remain in the FastAPI service behind
+that bridge while endpoint parity is migrated incrementally. Deploy the
+FastAPI application and PostgreSQL database separately
 to a Python-capable service such as Render, Railway, Fly.io, or a managed
 container platform. Vercel should host the static React frontend, not the
 long-running FastAPI process.
