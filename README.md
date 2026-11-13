@@ -6,9 +6,10 @@ administrators, and guardians.
 
 The repository contains:
 
-- A FastAPI/PostgreSQL backend with cookie-based authentication and role-based
-  access control.
-- A Next.js App Router frontend with the guardian and staff view families.
+- A Next.js App Router application with native server-side PostgreSQL access,
+  cookie-based authentication, and role-based access control.
+- Existing FastAPI files are retained only as migration references and are not
+  deployed or used by the Next.js application.
 - Alembic migrations and synthetic demo data for local testing.
 - Excel IEP workbook export support.
 
@@ -19,8 +20,7 @@ backend/       FastAPI API, SQLAlchemy models, migrations, tests
 docs/          Design, implementation, local setup, and schema documentation
 frontend/      Next.js App Router + React + TypeScript application
 scripts/       Repeatable local startup helpers
-frontend/vercel.json
-               Vercel configuration for the Next.js application
+vercel.json    Vercel Services configuration for Next.js + FastAPI
 ```
 
 ## Requirements
@@ -103,12 +103,8 @@ All seeded faculty IDs:
 - API prefix: `/api/v1`
 - Authentication uses secure HttpOnly access and refresh cookies.
 - The frontend uses `/api/v1` through the Next.js same-origin API bridge.
-- Set `BACKEND_URL` for the Next.js server to reach FastAPI.
-The browser never calls FastAPI directly, so browser CORS is not required for
-the normal Next.js deployment.
-
-For local development, the bridge defaults to `http://127.0.0.1:8000` when
-`BACKEND_URL` is unset. Production requires `BACKEND_URL`.
+- The Next.js server connects directly to PostgreSQL. There is no backend URL,
+separate API service, or browser CORS dependency.
 
 ## Database
 
@@ -152,25 +148,16 @@ Backend tests require a reachable PostgreSQL database configured by `.env`.
 
 ## Next.js and Vercel deployment
 
-The `frontend/` directory is the Vercel project root. In Vercel, set
-**Root Directory** to `frontend` before deploying. The repository is configured
-for a Vercel-hosted Next.js application through
-[frontend/vercel.json](frontend/vercel.json).
+The `frontend/` directory is the Root Directory for the single `siddhi`
+Vercel project. The Next.js server connects directly to Neon PostgreSQL
+through server route handlers.
 
 - **Framework preset:** Next.js
-- **Build command:** `next build` (default)
-- **Output directory:** managed by Next.js
-- **Environment variable:** `BACKEND_URL=https://<your-api-host>` (required)
+- **Root Directory:** repository root (`.`)
+- **Environment variable:** `DATABASE_URL` (required)
+- **Environment variable:** `SECRET_KEY` (required)
 
-The Next.js application owns the browser UI and same-origin API bridge. The
-current domain logic and PostgreSQL access remain in the FastAPI service behind
-that bridge while endpoint parity is migrated incrementally. Deploy the
-FastAPI application and PostgreSQL database separately
-to a Python-capable service such as Render, Railway, Fly.io, or a managed
-container platform. Vercel should host the static React frontend, not the
-long-running FastAPI process.
-
-For the API deployment, set at minimum:
+For the unified Vercel project, set at minimum:
 
 ```text
 APP_ENV=production
@@ -180,7 +167,7 @@ FRONTEND_ORIGIN=https://<your-vercel-domain>
 ALLOWED_ORIGINS=[]
 ```
 
-Run migrations as a release step before serving traffic:
+Run migrations against Neon before deploying schema changes:
 
 ```bash
 alembic upgrade head
