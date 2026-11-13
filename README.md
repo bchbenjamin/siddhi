@@ -148,8 +148,9 @@ Backend tests require a reachable PostgreSQL database configured by `.env`.
 
 ## Next.js and Vercel deployment
 
-The `frontend/` directory is the Root Directory for the single `siddhi`
-Vercel project. The Next.js server connects directly to Neon PostgreSQL
+The repository root is the Root Directory for the single `siddhi` Vercel
+project. [vercel.json](vercel.json) explicitly builds the Next.js application
+from `frontend/`. The Next.js server connects directly to Neon PostgreSQL
 through server route handlers.
 
 - **Framework preset:** Next.js
