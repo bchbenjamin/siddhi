@@ -4,9 +4,9 @@ from pydantic import BaseModel, Field
 
 
 class LoginRequest(BaseModel):
-    email: str = Field(..., min_length=3)
+    identifier: str = Field(..., min_length=3)
     password: str = Field(..., min_length=1)
-    client_mode: Optional[str] = "staff"  # "guardian" or "staff"
+    client_mode: Optional[str] = "staff"
 
 
 class TokenResponse(BaseModel):
@@ -25,6 +25,7 @@ class RoleMembershipSchema(BaseModel):
 
 class UserProfileResponse(BaseModel):
     id: uuid.UUID
+    faculty_id: Optional[str] = None
     email: str
     full_name: str
     phone: Optional[str] = None

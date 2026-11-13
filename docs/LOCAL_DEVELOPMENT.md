@@ -23,12 +23,16 @@ Open `http://127.0.0.1:5173/login`.
 
 ## Demo accounts
 
-These accounts are created by `backend/app/seed_demo.py`:
+These accounts are created by `backend/app/seed_demo.py`. Staff sign in with
+their faculty ID; guardians sign in with their email address:
 
-| Mode | Email | Password |
+| Mode | Login identifier | Password |
 |---|---|---|
-| School staff | `admin@siddhi.test` | `SiddhiAdmin2026!` |
+| School staff | `FAC-ADMIN-001` | `SiddhiAdmin2026!` |
 | Guardian | `guardian.multi@siddhi.test` | `SiddhiGuardian2026!` |
+
+Staff use the seeded `FAC-*` identifier for login. Their email addresses are
+not accepted by the staff login form. Guardians use their email address.
 
 The seed is safe to run repeatedly. Once the demo school exists, it skips
 creating duplicate records.

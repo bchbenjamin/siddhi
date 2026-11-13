@@ -10,7 +10,7 @@ import type { LoginResponse } from '../../types';
 import { Button, Field, Input } from '../../components/ui';
 
 const schema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  identifier: z.string().min(3, 'Enter your faculty ID'),
   password: z.string().min(1, 'Password is required'),
 });
 type FormValues = z.infer<typeof schema>;
@@ -33,7 +33,7 @@ export default function LoginPage() {
     setServerError(null);
     try {
       const res = await api.post<LoginResponse>('/auth/login', {
-        email: data.email,
+        identifier: data.identifier,
         password: data.password,
         client_mode: mode,
       });
@@ -89,18 +89,18 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
             <Field
-              label="Email address"
-              htmlFor="email"
-              error={errors.email?.message}
+              label={mode === 'guardian' ? 'Email address' : 'Faculty ID'}
+              htmlFor="identifier"
+              error={errors.identifier?.message}
               required
             >
               <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                error={!!errors.email}
-                {...register('email')}
+                id="identifier"
+                type={mode === 'guardian' ? 'email' : 'text'}
+                autoComplete={mode === 'guardian' ? 'email' : 'username'}
+                placeholder={mode === 'guardian' ? 'you@example.com' : 'FAC-0001'}
+                error={!!errors.identifier}
+                {...register('identifier')}
               />
             </Field>
 

@@ -57,6 +57,7 @@ students
 | Column | PostgreSQL type | Null | Constraints / meaning |
 |---|---|---:|---|
 | `id` | `UUID` | no | PK |
+| `faculty_id` | `VARCHAR(50)` | yes | Unique indexed staff login ID; guardians leave this empty |
 | `email` | `VARCHAR(255)` | no | Unique indexed login email |
 | `password_hash` | `VARCHAR(255)` | no | Argon2 password hash |
 | `full_name` | `VARCHAR(255)` | no | Display name |

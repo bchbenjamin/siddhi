@@ -75,13 +75,25 @@ For the full local walkthrough, see
 
 ## Demo accounts
 
-| Mode | Email | Password |
+| Mode | Login identifier | Password |
 |---|---|---|
-| School staff | `admin@siddhi.test` | `SiddhiAdmin2026!` |
+| School staff | `FAC-ADMIN-001` | `SiddhiAdmin2026!` |
 | Guardian | `guardian.multi@siddhi.test` | `SiddhiGuardian2026!` |
 
-These are synthetic local-only accounts. Do not use them in a deployed
-environment.
+Staff authenticate with their faculty ID. Guardian authentication uses email.
+Staff email addresses are not accepted as login identifiers. These are
+synthetic local-only accounts; do not use them in a deployed environment.
+
+All seeded faculty IDs:
+
+| Faculty ID | Role | Password |
+|---|---|---|
+| `FAC-ADMIN-001` | School administrator | `SiddhiAdmin2026!` |
+| `FAC-HEAD-001` | School head | `SiddhiHead2026!` |
+| `FAC-EDU-001` | Special educator | `SiddhiEducator2026!` |
+| `FAC-EDU-002` | Special educator | `SiddhiEducator2026!` |
+| `FAC-THER-001` | Therapist | `SiddhiTherapy2026!` |
+| `FAC-PSY-001` | Psychologist | `SiddhiPsych2026!` |
 
 ## API
 

@@ -18,7 +18,23 @@ def seed_database():
         # Check if already seeded
         school = db.query(School).filter(School.code == "SJA-001").first()
         if school:
-            print("Database already contains demo school SJA-001. Skipping re-seeding.")
+            faculty_ids = {
+                "admin@siddhi.test": "FAC-ADMIN-001",
+                "principal@siddhi.test": "FAC-HEAD-001",
+                "educator1@siddhi.test": "FAC-EDU-001",
+                "educator2@siddhi.test": "FAC-EDU-002",
+                "therapist@siddhi.test": "FAC-THER-001",
+                "psychologist@siddhi.test": "FAC-PSY-001",
+            }
+            updated = 0
+            for email, faculty_id in faculty_ids.items():
+                user = db.query(User).filter(User.email == email).first()
+                if user and user.faculty_id != faculty_id:
+                    user.faculty_id = faculty_id
+                    updated += 1
+            if updated:
+                db.commit()
+            print(f"Database already contains demo school SJA-001. Seed skipped; faculty IDs updated: {updated}.")
             return
 
         print("Seeding synthetic demo records into PostgreSQL...")
@@ -35,9 +51,10 @@ def seed_database():
         db.commit()
 
         # Helper to create user
-        def make_user(email: str, name: str, password: str, phone: str = "555-0100"):
+        def make_user(email: str, name: str, password: str, phone: str = "555-0100", faculty_id: str | None = None):
             u = User(
                 id=uuid.uuid4(),
+                faculty_id=faculty_id,
                 email=email.lower().strip(),
                 password_hash=get_password_hash(password),
                 full_name=name,
@@ -62,22 +79,22 @@ def seed_database():
             return mem
 
         # 2. Staff & Guardian Users
-        admin_user = make_user("admin@siddhi.test", "Sanjay Deshmukh (Admin)", "SiddhiAdmin2026!", "555-0101")
+        admin_user = make_user("admin@siddhi.test", "Sanjay Deshmukh (Admin)", "SiddhiAdmin2026!", "555-0101", "FAC-ADMIN-001")
         add_membership(admin_user.id, "school_admin")
 
-        head_user = make_user("principal@siddhi.test", "Dr. Shalini Menon (School Head)", "SiddhiHead2026!", "555-0102")
+        head_user = make_user("principal@siddhi.test", "Dr. Shalini Menon (School Head)", "SiddhiHead2026!", "555-0102", "FAC-HEAD-001")
         add_membership(head_user.id, "school_head")
 
-        edu1_user = make_user("educator1@siddhi.test", "Ananya Sharma (Special Educator)", "SiddhiEducator2026!", "555-0103")
+        edu1_user = make_user("educator1@siddhi.test", "Ananya Sharma (Special Educator)", "SiddhiEducator2026!", "555-0103", "FAC-EDU-001")
         add_membership(edu1_user.id, "special_educator")
 
-        edu2_user = make_user("educator2@siddhi.test", "Rajesh Kumar (Special Educator)", "SiddhiEducator2026!", "555-0104")
+        edu2_user = make_user("educator2@siddhi.test", "Rajesh Kumar (Special Educator)", "SiddhiEducator2026!", "555-0104", "FAC-EDU-002")
         add_membership(edu2_user.id, "special_educator")
 
-        therapist_user = make_user("therapist@siddhi.test", "Priya Nair (Lead Therapist)", "SiddhiTherapy2026!", "555-0105")
+        therapist_user = make_user("therapist@siddhi.test", "Priya Nair (Lead Therapist)", "SiddhiTherapy2026!", "555-0105", "FAC-THER-001")
         add_membership(therapist_user.id, "therapist")
 
-        psych_user = make_user("psychologist@siddhi.test", "Dr. Arjun Verma (Psychologist)", "SiddhiPsych2026!", "555-0106")
+        psych_user = make_user("psychologist@siddhi.test", "Dr. Arjun Verma (Psychologist)", "SiddhiPsych2026!", "555-0106", "FAC-PSY-001")
         add_membership(psych_user.id, "psychologist")
 
         # Guardian with exactly one child

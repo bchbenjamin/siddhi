@@ -40,6 +40,7 @@ def build_user_profile(user: User, active_school_id: uuid.UUID, active_role: str
 
     return UserProfileResponse(
         id=user.id,
+        faculty_id=user.faculty_id,
         email=user.email,
         full_name=user.full_name,
         phone=user.phone,
@@ -53,8 +54,11 @@ def build_user_profile(user: User, active_school_id: uuid.UUID, active_role: str
 
 @router.post("/login", response_model=LoginResponse)
 def login(request: LoginRequest, response: Response, db: Session = Depends(get_db)):
-    email_clean = request.email.strip().lower()
-    user = db.query(User).filter(User.email == email_clean).first()
+    identifier = request.identifier.strip()
+    if request.client_mode == "guardian":
+        user = db.query(User).filter(User.email == identifier.lower()).first()
+    else:
+        user = db.query(User).filter(User.faculty_id == identifier.upper()).first()
 
     # Generic invalid login response to prevent email enumeration
     generic_error = HTTPException(
