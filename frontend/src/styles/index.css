@@ -1,0 +1,36 @@
+@import "tailwindcss";
+@import "./variables.css";
+@import "./theme.css";
+
+/* Base document defaults */
+html {
+  font-family: var(--font-nng);
+  background-color: var(--color-paper-white);
+  color: var(--color-ink-black);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: var(--color-paper-white);
+  color: var(--color-ink-black);
+}
+
+/* Reduced motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Accessible focus ring */
+:focus-visible {
+  outline: 2px solid var(--color-burnt-amber);
+  outline-offset: 2px;
+}

@@ -1,0 +1,14 @@
+fastapi[standard]
+sqlalchemy>=2.0
+psycopg[binary]
+alembic
+pydantic-settings
+pwdlib[argon2]
+PyJWT[crypto]
+python-multipart
+email-validator
+openpyxl
+ruff
+pytest
+pytest-cov
+httpx
