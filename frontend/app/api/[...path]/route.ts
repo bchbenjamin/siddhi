@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const backendOrigin = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
-
 async function proxy(request: NextRequest, path: string[]) {
+  const backendOrigin =
+    process.env.BACKEND_URL ||
+    (process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8000' : undefined);
+  if (!backendOrigin) {
+    return NextResponse.json(
+      { detail: 'BACKEND_URL is not configured for the Next.js API bridge.' },
+      { status: 500 },
+    );
+  }
+
   const target = new URL(`/api/${path.join('/')}`, backendOrigin);
   target.search = request.nextUrl.search;
 

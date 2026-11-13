@@ -103,15 +103,11 @@ All seeded faculty IDs:
 - Authentication uses secure HttpOnly access and refresh cookies.
 - The frontend uses `/api/v1` through the Next.js same-origin API bridge.
 - Set `BACKEND_URL` for the Next.js server to reach FastAPI.
+The browser never calls FastAPI directly, so browser CORS is not required for
+the normal Next.js deployment.
 
-To point a separately deployed frontend at a deployed API, set:
-
-```text
-NEXT_PUBLIC_API_BASE_URL=https://api.example.com/api/v1
-```
-
-The API must allow the deployed frontend origin in its CORS configuration and
-must use HTTPS in non-development environments.
+For local development, the bridge defaults to `http://127.0.0.1:8000` when
+`BACKEND_URL` is unset. Production requires `BACKEND_URL`.
 
 ## Database
 
@@ -161,8 +157,7 @@ The repository is configured for a Vercel-hosted Next.js application through
 - **Framework preset:** Next.js
 - **Build command:** already supplied by `vercel.json`
 - **Output directory:** managed by Next.js
-- **Environment variable:** `NEXT_PUBLIC_API_BASE_URL=https://<your-api-host>/api/v1` (optional; use the same-origin bridge by default)
-- **Environment variable:** `BACKEND_URL=https://<your-api-host>`
+- **Environment variable:** `BACKEND_URL=https://<your-api-host>` (required)
 
 The Next.js application owns the browser UI and same-origin API bridge. The
 current domain logic and PostgreSQL access remain in the FastAPI service behind
@@ -179,7 +174,7 @@ APP_ENV=production
 DATABASE_URL=<managed PostgreSQL URL>
 SECRET_KEY=<long random secret>
 FRONTEND_ORIGIN=https://<your-vercel-domain>
-ALLOWED_ORIGINS=["https://<your-vercel-domain>"]
+ALLOWED_ORIGINS=[]
 ```
 
 Run migrations as a release step before serving traffic:
