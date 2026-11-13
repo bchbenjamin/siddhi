@@ -19,7 +19,8 @@ backend/       FastAPI API, SQLAlchemy models, migrations, tests
 docs/          Design, implementation, local setup, and schema documentation
 frontend/      Next.js App Router + React + TypeScript application
 scripts/       Repeatable local startup helpers
-vercel.json    Vercel configuration for the Next.js application
+frontend/vercel.json
+               Vercel configuration for the Next.js application
 ```
 
 ## Requirements
@@ -151,11 +152,13 @@ Backend tests require a reachable PostgreSQL database configured by `.env`.
 
 ## Next.js and Vercel deployment
 
-The repository is configured for a Vercel-hosted Next.js application through
-[vercel.json](vercel.json). In Vercel, import the repository and configure:
+The `frontend/` directory is the Vercel project root. In Vercel, set
+**Root Directory** to `frontend` before deploying. The repository is configured
+for a Vercel-hosted Next.js application through
+[frontend/vercel.json](frontend/vercel.json).
 
 - **Framework preset:** Next.js
-- **Build command:** already supplied by `vercel.json`
+- **Build command:** `next build` (default)
 - **Output directory:** managed by Next.js
 - **Environment variable:** `BACKEND_URL=https://<your-api-host>` (required)
 
