@@ -5,7 +5,7 @@
  * - Normalises error shape
  */
 
-const API_BASE = '/api/v1';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 export class ApiError extends Error {
   constructor(
@@ -31,8 +31,11 @@ async function handleResponse<T>(res: Response): Promise<T> {
   }
 
   if (res.status === 401) {
-    // Clear auth and redirect to login
-    window.location.href = '/login';
+    // The login page intentionally calls /auth/me without a session.
+    // Redirect only when an authenticated page loses its session.
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
     throw new ApiError(401, 'Session expired');
   }
 
