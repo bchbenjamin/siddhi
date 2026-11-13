@@ -46,9 +46,9 @@ function GoalProgressCard({
   onAddEntry: (goalId: string) => void;
 }) {
   const terms = ['baseline', 'term_1', 'term_2', 'term_3', 'final'];
-  const chartData = terms
-    .map(t => ({ term: TERM_LABELS[t], rating: summary[t as keyof GoalProgressSummary] ?? null }))
-    .filter(d => d.rating !== null);
+  const chartData: Array<{ term: string; rating: number }> = terms
+    .map(t => ({ term: TERM_LABELS[t], rating: summary[t as 'baseline' | 'term_1' | 'term_2' | 'term_3' | 'final'] }))
+    .filter((d): d is { term: string; rating: number } => d.rating !== undefined && d.rating !== null);
 
   return (
     <Card>

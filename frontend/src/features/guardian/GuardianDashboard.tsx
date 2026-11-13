@@ -4,7 +4,7 @@ import { api } from '../../lib/api';
 import type { GuardianChildCard } from '../../types';
 import { PageShell } from '../../components/layout/PageShell';
 import { LoadingState, ErrorState, EmptyState, Avatar, StatusBadge, Button } from '../../components/ui';
-import { formatDate, ageFromDob } from '../../lib/utils';
+import { ageFromDob } from '../../lib/utils';
 import { ChevronRight } from 'lucide-react';
 
 function ChildCard({ child, wide = false }: { child: GuardianChildCard; wide?: boolean }) {

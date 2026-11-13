@@ -9,7 +9,7 @@ import { api } from '../../lib/api';
 import type { PLOPRecord } from '../../types';
 import { useAuth } from '../../app/AuthContext';
 import { PageShell } from '../../components/layout/PageShell';
-import { PageHeader, Card, LoadingState, ErrorState, EmptyState, Button, Modal, Field, Input, Textarea, Select, StatusBadge } from '../../components/ui';
+import { PageHeader, Card, LoadingState, ErrorState, EmptyState, Button, Modal, Field, Input, Textarea, Select } from '../../components/ui';
 import { formatDate, PLOP_DOMAIN_LABELS } from '../../lib/utils';
 
 const DOMAINS = Object.entries(PLOP_DOMAIN_LABELS).map(([value, label]) => ({ value, label }));

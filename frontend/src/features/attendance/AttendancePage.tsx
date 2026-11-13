@@ -11,7 +11,7 @@ import { useAuth } from '../../app/AuthContext';
 import { PageShell } from '../../components/layout/PageShell';
 import {
   PageHeader, Card, LoadingState, ErrorState, EmptyState, Button,
-  Modal, Field, Input, Textarea, Select, StatusBadge, DataTable
+  Modal, Field, Input, Select, StatusBadge, DataTable
 } from '../../components/ui';
 import { formatDate } from '../../lib/utils';
 

@@ -7,7 +7,7 @@ import { useAuth } from '../../app/AuthContext';
 import { PageShell } from '../../components/layout/PageShell';
 import {
   PageHeader, Card, LoadingState, ErrorState, Button, Modal,
-  Field, Input, Select
+  Field, Input
 } from '../../components/ui';
 import { getErrorMessage } from '../../lib/utils';
 

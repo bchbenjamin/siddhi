@@ -4,7 +4,7 @@ import { api } from '../../lib/api';
 import type { StudentDetail } from '../../types';
 import { useAuth } from '../../app/AuthContext';
 import { PageShell } from '../../components/layout/PageShell';
-import { LoadingState, ErrorState, Card, Avatar, StatusBadge, Button } from '../../components/ui';
+import { LoadingState, ErrorState, Card, Avatar, Button } from '../../components/ui';
 import { formatDate, ageFromDob } from '../../lib/utils';
 import {
   BookOpen, TrendingUp, Heart, Settings2, MessageSquare,

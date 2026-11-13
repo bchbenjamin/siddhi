@@ -106,7 +106,7 @@ export default function ReviewsPage() {
     onError: (err) => setServerError(err instanceof Error ? err.message : 'Failed'),
   });
 
-  function canDecideApproval(review: IEPReview, approval: IEPReview['approvals'][0]): boolean {
+  function canDecideApproval(_review: IEPReview, approval: IEPReview['approvals'][0]): boolean {
     if (!user) return false;
     if (approval.status !== 'pending') return false;
     if (user.active_role === 'guardian') return approval.required_role === 'guardian';

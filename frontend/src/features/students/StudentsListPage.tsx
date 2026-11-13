@@ -5,8 +5,8 @@ import { Search } from 'lucide-react';
 import { api } from '../../lib/api';
 import type { StudentListResponse } from '../../types';
 import { PageShell } from '../../components/layout/PageShell';
-import { PageHeader, LoadingState, ErrorState, EmptyState, Button, Input, StatusBadge } from '../../components/ui';
-import { formatDate, ageFromDob } from '../../lib/utils';
+import { PageHeader, LoadingState, ErrorState, EmptyState, Button, Input } from '../../components/ui';
+import { ageFromDob } from '../../lib/utils';
 
 export default function StudentsListPage() {
   const navigate = useNavigate();

@@ -2,6 +2,7 @@
  * Shared UI components for Siddhi
  */
 import React from 'react';
+import type { ElementType } from 'react';
 import { Loader2 } from 'lucide-react';
 import { RATING_LABELS } from '../../lib/utils';
 
@@ -66,7 +67,7 @@ export function Button({
 interface CardProps {
   children: React.ReactNode;
   className?: string;
-  as?: keyof JSX.IntrinsicElements;
+  as?: ElementType;
 }
 
 export function Card({ children, className = '', as: Tag = 'div' }: CardProps) {

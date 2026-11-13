@@ -11,7 +11,7 @@ import { useAuth } from '../../app/AuthContext';
 import { PageShell } from '../../components/layout/PageShell';
 import {
   PageHeader, Card, LoadingState, ErrorState, EmptyState, Button,
-  Modal, Field, Input, Textarea, Select, StatusBadge
+  Modal, Field, Input, Textarea, Select
 } from '../../components/ui';
 import { formatDate, THERAPY_TYPE_LABELS } from '../../lib/utils';
 

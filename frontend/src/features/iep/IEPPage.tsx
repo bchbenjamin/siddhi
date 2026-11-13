@@ -13,7 +13,7 @@ import {
   PageHeader, Card, LoadingState, ErrorState, EmptyState, Button,
   Modal, Field, Input, Textarea, Select, StatusBadge
 } from '../../components/ui';
-import { formatDate, PLOP_DOMAIN_LABELS, IEP_STATUS_LABELS, GOAL_STATUS_LABELS } from '../../lib/utils';
+import { formatDate, PLOP_DOMAIN_LABELS } from '../../lib/utils';
 
 const planSchema = z.object({
   academic_year: z.string().min(1),

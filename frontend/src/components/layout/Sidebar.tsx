@@ -1,8 +1,7 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import {
-  Home, Users, BookOpen, TrendingUp, Heart, Settings2,
-  MessageSquare, FileText, Calendar, ClipboardCheck,
-  BarChart2, UserCog, LogOut, User, HelpCircle, GraduationCap
+  Home, Users, BookOpen, Heart, Menu, FileText, Calendar,
+  ClipboardCheck, BarChart2, UserCog, LogOut, User, GraduationCap
 } from 'lucide-react';
 import { useAuth } from '../../app/AuthContext';
 import type { Role } from '../../types';
@@ -64,9 +63,13 @@ function getNavItems(role: Role): NavItem[] {
   }
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  mobile?: boolean;
+  onNavigate?: () => void;
+}
+
+export function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
 
   if (!user) return null;
 
@@ -74,7 +77,11 @@ export function Sidebar() {
 
   return (
     <aside
-      className="hidden md:flex flex-col w-16 lg:w-56 bg-white border-r border-bone min-h-screen"
+      className={
+        mobile
+          ? 'flex flex-col w-72 max-w-[85vw] bg-white min-h-screen shadow-xl'
+          : 'hidden md:flex flex-col w-16 lg:w-56 bg-white border-r border-bone min-h-screen'
+      }
       aria-label="Main navigation"
     >
       {/* Logo area */}
@@ -82,7 +89,7 @@ export function Sidebar() {
         <div className="w-8 h-8 rounded-lg bg-burnt-amber flex items-center justify-center flex-shrink-0">
           <GraduationCap size={16} className="text-white" aria-hidden="true" />
         </div>
-        <span className="hidden lg:block text-sm font-medium text-ink-black tracking-tight">Siddhi</span>
+        <span className={mobile ? 'text-sm font-medium text-ink-black tracking-tight' : 'hidden lg:block text-sm font-medium text-ink-black tracking-tight'}>Siddhi</span>
       </div>
 
       {/* Nav links */}
@@ -91,6 +98,7 @@ export function Sidebar() {
           <NavLink
             key={item.label + item.to}
             to={item.to}
+            onClick={onNavigate}
             title={item.label}
             className={({ isActive }) =>
               `flex items-center gap-3 px-2 py-2 rounded-lg text-sm transition-colors duration-150
@@ -101,7 +109,7 @@ export function Sidebar() {
             }
           >
             <span className="flex-shrink-0" aria-hidden="true">{item.icon}</span>
-            <span className="hidden lg:block truncate">{item.label}</span>
+            <span className={mobile ? 'truncate' : 'hidden lg:block truncate'}>{item.label}</span>
           </NavLink>
         ))}
       </nav>
@@ -115,7 +123,7 @@ export function Sidebar() {
           >
             {initials(user.full_name)}
           </div>
-          <div className="hidden lg:block min-w-0">
+          <div className={mobile ? 'min-w-0' : 'hidden lg:block min-w-0'}>
             <p className="text-xs font-medium text-ink-black truncate">{user.full_name}</p>
             <p className="text-xs text-mist-gray truncate capitalize">{user.active_role.replace('_', ' ')}</p>
           </div>
@@ -126,7 +134,7 @@ export function Sidebar() {
           className="flex items-center gap-3 w-full px-2 py-2 rounded-lg text-sm text-slate-gray hover:text-ink-black hover:bg-bone transition-colors"
         >
           <LogOut size={18} aria-hidden="true" />
-          <span className="hidden lg:block">Log out</span>
+          <span className={mobile ? '' : 'hidden lg:block'}>Log out</span>
         </button>
       </div>
     </aside>
@@ -135,7 +143,7 @@ export function Sidebar() {
 
 /** Mobile top bar with hamburger */
 export function MobileTopBar({ onMenuOpen }: { onMenuOpen: () => void }) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   return (
     <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-bone">
       <button
@@ -143,7 +151,7 @@ export function MobileTopBar({ onMenuOpen }: { onMenuOpen: () => void }) {
         aria-label="Open navigation menu"
         className="p-1 rounded text-slate-gray hover:text-ink-black"
       >
-        <Settings2 size={20} />
+        <Menu size={20} />
       </button>
       <div className="flex items-center gap-2">
         <div className="w-7 h-7 rounded-full bg-lavender-mist flex items-center justify-center text-xs font-medium text-deep-violet">
