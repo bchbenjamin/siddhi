@@ -142,6 +142,56 @@ export async function currentUser() {
   }
 }
 
+export async function refreshSession(rawRefreshToken: string | undefined) {
+  if (!rawRefreshToken) return null;
+  const result = await database().query<
+    QueryResultRow & {
+      id: string;
+      user_id: string;
+      expires_at: Date;
+    }
+  >(
+    `SELECT id, user_id, expires_at
+     FROM user_sessions
+     WHERE refresh_token_hash = $1
+       AND revoked_at IS NULL
+       AND expires_at > NOW()
+     LIMIT 1`,
+    [hashToken(rawRefreshToken)],
+  );
+  const session = result.rows[0];
+  if (!session) return null;
+  const userResult = await database().query<UserRow>(
+    `SELECT id, faculty_id, email, password_hash, full_name, phone, is_active
+     FROM users WHERE id = $1 AND is_active = TRUE LIMIT 1`,
+    [session.user_id],
+  );
+  const user = userResult.rows[0];
+  if (!user) return null;
+  const selectedProfile = await profile(user);
+  const now = new Date();
+  const accessToken = await new SignJWT({
+    school_id: selectedProfile.active_school_id,
+    role: selectedProfile.active_role,
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setSubject(user.id)
+    .setIssuedAt()
+    .setExpirationTime(`${ACCESS_TOKEN_MINUTES}m`)
+    .sign(secret);
+  const newRefreshToken = randomBytes(32).toString('base64url');
+  await database().query(
+    `UPDATE user_sessions
+     SET refresh_token_hash = $1, last_used_at = $2
+     WHERE id = $3`,
+    [hashToken(newRefreshToken), now, session.id],
+  );
+  const cookieStore = await cookies();
+  cookieStore.set('access_token', accessToken, tokenCookieOptions(ACCESS_TOKEN_MINUTES * 60));
+  cookieStore.set('refresh_token', newRefreshToken, tokenCookieOptions(REFRESH_DAYS * 86400));
+  return { accessToken, refreshToken: newRefreshToken };
+}
+
 export async function logout() {
   const cookieStore = await cookies();
   cookieStore.delete('access_token');

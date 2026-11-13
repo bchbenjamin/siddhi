@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { currentUser, login, logout } from '../../../lib/server/auth';
+import { currentUser, login, logout, refreshSession } from '../../../lib/server/auth';
+import { cookies } from 'next/headers';
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
@@ -15,6 +16,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
   if (path.join('/') === 'v1/auth/logout') {
     await logout();
     return NextResponse.json({ message: 'Successfully logged out' });
+  }
+  if (path.join('/') === 'v1/auth/refresh') {
+    const refreshed = await refreshSession((await cookies()).get('refresh_token')?.value);
+    return refreshed
+      ? NextResponse.json({ access_token: refreshed.accessToken, refresh_token: refreshed.refreshToken, token_type: 'bearer' })
+      : NextResponse.json({ detail: 'Invalid or expired session' }, { status: 401 });
   }
   return NextResponse.json({ detail: 'This endpoint has not yet been migrated to Next.js.' }, { status: 501 });
 }

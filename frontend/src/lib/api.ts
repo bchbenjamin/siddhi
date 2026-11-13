@@ -71,7 +71,7 @@ function buildUrl(path: string, params?: RequestOptions['params']): string {
   return url.pathname + url.search;
 }
 
-async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+async function request<T>(path: string, opts: RequestOptions = {}, allowRefresh = true): Promise<T> {
   const { body, params, headers = {}, ...rest } = opts;
 
   const finalHeaders: Record<string, string> = {
@@ -96,6 +96,15 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
     ...rest,
   });
 
+  if (res.status === 401 && allowRefresh && path !== '/auth/refresh' && path !== '/auth/login') {
+    const refreshResponse = await fetch(buildUrl('/auth/refresh'), {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (refreshResponse.ok) {
+      return request<T>(path, opts, false);
+    }
+  }
   return handleResponse<T>(res);
 }
 
