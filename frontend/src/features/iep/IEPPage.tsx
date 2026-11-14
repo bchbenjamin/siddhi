@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from '../../lib/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,7 +21,8 @@ const planSchema = z.object({
   end_date: z.string().min(1),
   status: z.string().default('draft'),
 });
-type PlanForm = z.infer<typeof planSchema>;
+type PlanInput = z.input<typeof planSchema>;
+type PlanForm = z.output<typeof planSchema>;
 
 const goalSchema = z.object({
   domain: z.string().min(1),
@@ -31,7 +32,8 @@ const goalSchema = z.object({
   evaluation_method: z.string().min(1),
   status: z.string().default('not_started'),
 });
-type GoalForm = z.infer<typeof goalSchema>;
+type GoalInput = z.input<typeof goalSchema>;
+type GoalForm = z.output<typeof goalSchema>;
 
 function GoalCard({ goal }: { goal: IEPGoal }) {
   const [expanded, setExpanded] = useState(false);
@@ -109,8 +111,8 @@ export default function IEPPage() {
     if (active) setSelectedPlan(active);
   }
 
-  const planForm = useForm<PlanForm>({ resolver: zodResolver(planSchema) });
-  const goalForm = useForm<GoalForm>({ resolver: zodResolver(goalSchema) });
+  const planForm = useForm<PlanInput, unknown, PlanForm>({ resolver: zodResolver(planSchema) });
+  const goalForm = useForm<GoalInput, unknown, GoalForm>({ resolver: zodResolver(goalSchema) });
 
   const createPlanMutation = useMutation({
     mutationFn: (data: PlanForm) => api.post(`/students/${studentId}/iep-plans`, data),

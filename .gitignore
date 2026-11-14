@@ -19,3 +19,5 @@ var/uploads/
 Dev_notes.md
 .vercel
 .env*
+
+*.tsbuildinfo

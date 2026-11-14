@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link } from '../../lib/navigation';
 import { api } from '../../lib/api';
 import type { StudentDetail } from '../../types';
 import { useAuth } from '../../app/AuthContext';

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../../lib/navigation';
 import { Search } from 'lucide-react';
 import { api } from '../../lib/api';
 import type { StudentListResponse } from '../../types';

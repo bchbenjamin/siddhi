@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../../lib/navigation';
 import { api } from '../../lib/api';
 import type { ReportsSummary } from '../../types';
 import { useAuth } from '../../app/AuthContext';

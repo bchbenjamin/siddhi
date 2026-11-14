@@ -74,7 +74,7 @@ students
 | `id` | `UUID` | no | PK |
 | `school_id` | `UUID` | no | FK `schools.id`, `RESTRICT` |
 | `user_id` | `UUID` | no | FK `users.id`, `CASCADE` |
-| `role` | `VARCHAR(50)` | no | guardian, special_educator, therapist, psychologist, school_head, school_admin |
+| `role` | `VARCHAR(50)` | no | guardian, special_educator, therapist, psychologist, psychiatrist, school_head, school_admin |
 | `is_active` | `BOOLEAN` | no | Defaults `true` |
 | `created_at` | `TIMESTAMPTZ` | no | Creation time |
 

@@ -25,6 +25,7 @@ def seed_database():
                 "educator2@siddhi.test": "FAC-EDU-002",
                 "therapist@siddhi.test": "FAC-THER-001",
                 "psychologist@siddhi.test": "FAC-PSY-001",
+                "psychiatrist@siddhi.test": "FAC-PSYCH-001",
             }
             updated = 0
             for email, faculty_id in faculty_ids.items():
@@ -34,7 +35,29 @@ def seed_database():
                     updated += 1
             if updated:
                 db.commit()
-            print(f"Database already contains demo school SJA-001. Seed skipped; faculty IDs updated: {updated}.")
+            psychiatrist = db.query(User).filter(User.email == "psychiatrist@siddhi.test").first()
+            if not psychiatrist:
+                psychiatrist = User(
+                    id=uuid.uuid4(), faculty_id="FAC-PSYCH-001", email="psychiatrist@siddhi.test",
+                    password_hash=get_password_hash("SiddhiPsychiatrist2026!"),
+                    full_name="Dr. Kavita Rao (Psychiatrist)", phone="555-0109", is_active=True
+                )
+                db.add(psychiatrist)
+                db.commit()
+            membership = db.query(SchoolMembership).filter(
+                SchoolMembership.school_id == school.id, SchoolMembership.user_id == psychiatrist.id,
+                SchoolMembership.role == "psychiatrist"
+            ).first()
+            if not membership:
+                db.add(SchoolMembership(school_id=school.id, user_id=psychiatrist.id, role="psychiatrist", is_active=True))
+                db.commit()
+            sample_student = db.query(Student).filter(Student.school_id == school.id, Student.admission_number == "ADM-2026-001").first()
+            if sample_student:
+                assignment = db.query(StaffStudentAssignment).filter(StaffStudentAssignment.staff_user_id == psychiatrist.id, StaffStudentAssignment.student_id == sample_student.id, StaffStudentAssignment.school_id == school.id).first()
+                if not assignment:
+                    db.add(StaffStudentAssignment(school_id=school.id, staff_user_id=psychiatrist.id, student_id=sample_student.id, assignment_type="psychiatrist", is_active=True))
+                    db.commit()
+            print(f"Database already contains demo school SJA-001. Seed skipped; faculty IDs updated: {updated}; psychiatrist account ensured.")
             return
 
         print("Seeding synthetic demo records into PostgreSQL...")
@@ -96,6 +119,9 @@ def seed_database():
 
         psych_user = make_user("psychologist@siddhi.test", "Dr. Arjun Verma (Psychologist)", "SiddhiPsych2026!", "555-0106", "FAC-PSY-001")
         add_membership(psych_user.id, "psychologist")
+
+        psychiatrist_user = make_user("psychiatrist@siddhi.test", "Dr. Kavita Rao (Psychiatrist)", "SiddhiPsychiatrist2026!", "555-0109", "FAC-PSYCH-001")
+        add_membership(psychiatrist_user.id, "psychiatrist")
 
         # Guardian with exactly one child
         guardian1_user = make_user("guardian.single@siddhi.test", "Sunita Patel", "SiddhiGuardian2026!", "555-0107")
@@ -247,6 +273,7 @@ def seed_database():
             StaffStudentAssignment(school_id=school.id, staff_user_id=edu1_user.id, student_id=student1.id, assignment_type="special_educator", is_active=True),
             StaffStudentAssignment(school_id=school.id, staff_user_id=therapist_user.id, student_id=student1.id, assignment_type="speech_therapist", is_active=True),
             StaffStudentAssignment(school_id=school.id, staff_user_id=psych_user.id, student_id=student1.id, assignment_type="psychologist", is_active=True),
+            StaffStudentAssignment(school_id=school.id, staff_user_id=psychiatrist_user.id, student_id=student1.id, assignment_type="psychiatrist", is_active=True),
             StaffStudentAssignment(school_id=school.id, staff_user_id=edu1_user.id, student_id=student2.id, assignment_type="special_educator", is_active=True),
             StaffStudentAssignment(school_id=school.id, staff_user_id=edu2_user.id, student_id=student3.id, assignment_type="special_educator", is_active=True),
             StaffStudentAssignment(school_id=school.id, staff_user_id=therapist_user.id, student_id=student3.id, assignment_type="speech_therapist", is_active=True),

@@ -103,7 +103,8 @@ Implement these roles as server-enforced permissions:
 | `guardian` | View linked child profiles, permitted IEP information, progress, therapy summaries, reports and communication history | Only children explicitly linked to that guardian; only guardian-visible records |
 | `special_educator` | Maintain student profiles, PLOP, IEP plans, goals, progress, accommodations, attendance and parent interaction records | Students assigned to that educator, within the educator's school |
 | `therapist` | View assigned students' relevant goals and add therapy sessions/progress notes | Students assigned to the therapist; therapy-related information only where practical |
-| `psychologist` | Add/view permitted psychological and relevant assessment records and PLOP contributions | Assigned students and assessment permissions |
+| `psychologist` | Add/view permitted psychological and relevant assessment records and PLOP contributions | Assigned students and psychological assessment permissions |
+| `psychiatrist` | Add/view permitted medical and psychiatric assessment records; distinct from the psychologist role | Assigned students and medical/psychiatric assessment permissions |
 | `school_head` | Review school-level IEP status, conduct/record approvals and monitor progress | All permitted students and records in that school |
 | `school_admin` | Manage the school's users, student links, assignments, configuration and authorised exports | School-wide administrative scope; no cross-school access |
 

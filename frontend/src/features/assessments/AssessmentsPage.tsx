@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from '../../lib/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -36,7 +36,7 @@ export default function AssessmentsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
-  const canWrite = user?.active_role && ['psychologist', 'special_educator', 'therapist', 'school_head'].includes(user.active_role);
+  const canWrite = user?.active_role && ['psychologist', 'psychiatrist', 'special_educator', 'therapist', 'school_head'].includes(user.active_role);
 
   const { data, isLoading, error } = useQuery<AssessmentRecord[]>({
     queryKey: ['assessments', studentId],

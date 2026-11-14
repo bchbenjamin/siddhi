@@ -168,7 +168,7 @@ def verify_student_access(
         return student
 
     # Therapists and psychologists must be assigned or belong to school
-    if context.active_role in ("therapist", "psychologist"):
+    if context.active_role in ("therapist", "psychologist", "psychiatrist"):
         # Check explicit assignment
         assignment = db.query(StaffStudentAssignment).filter(
             StaffStudentAssignment.staff_user_id == context.user.id,

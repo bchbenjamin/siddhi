@@ -1,26 +1,19 @@
- 'use client';
+'use client';
 
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Suspense, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
 import { AuthProvider, useAuth } from './app/AuthContext';
 import { ProtectedRoute } from './app/ProtectedRoute';
-
-// Auth pages
 import LoginPage from './features/auth/LoginPage';
 import ForgotPasswordPage from './features/auth/ForgotPasswordPage';
 import ResetPasswordPage from './features/auth/ResetPasswordPage';
-
-// Guardian
 import GuardianDashboard from './features/guardian/GuardianDashboard';
 import GuardianProfilePage from './features/guardian/GuardianProfilePage';
-
-// Staff / students
 import StaffDashboard from './features/students/StaffDashboard';
 import StudentsListPage from './features/students/StudentsListPage';
 import StudentProfilePage from './features/students/StudentProfilePage';
-
-// IEP sections
+import StudentEditPage from './features/students/StudentEditPage';
 import PLOPPage from './features/plop/PLOPPage';
 import IEPPage from './features/iep/IEPPage';
 import ProgressPage from './features/progress/ProgressPage';
@@ -30,135 +23,49 @@ import CommunicationsPage from './features/communications/CommunicationsPage';
 import AssessmentsPage from './features/assessments/AssessmentsPage';
 import AttendancePage from './features/attendance/AttendancePage';
 import ReviewsPage from './features/reviews/ReviewsPage';
-
-// Reports
 import ReportsPage from './features/reports/ReportsPage';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 30_000,
-    },
-  },
-});
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 30_000 } } });
 
-function RootRedirect() {
+function RouteContent() {
+  const pathname = usePathname();
+  const router = useRouter();
   const { user, isLoading } = useAuth();
-  if (isLoading) return null;
-  if (!user) return <Navigate to="/login" replace />;
-  return <Navigate to={user.landing_route} replace />;
+  const studentRoute = pathname.match(/^\/students\/([^/]+)(?:\/(plop|iep|progress|therapy|accommodations|communications|assessments|attendance|reviews|edit))?$/);
+  const studentId = studentRoute?.[1];
+  const section = studentRoute?.[2];
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (pathname === '/' && !user) router.replace('/login');
+    else if (pathname === '/' && user) router.replace(user.landing_route);
+    else if (!['/login','/forgot-password','/reset-password'].includes(pathname) && !user) router.replace('/login');
+  }, [pathname, user, isLoading, router]);
+
+  if (isLoading && pathname !== '/login') return <div className="min-h-screen flex items-center justify-center text-slate-gray">Loading…</div>;
+  if (pathname === '/login') return <LoginPage />;
+  if (pathname === '/forgot-password') return <ForgotPasswordPage />;
+  if (pathname === '/reset-password') return <ResetPasswordPage />;
+  if (!user) return null;
+  if (pathname === '/guardian') return <ProtectedRoute allowedRoles={['guardian']}><GuardianDashboard /></ProtectedRoute>;
+  if (pathname === '/guardian/profile') return <ProtectedRoute allowedRoles={['guardian']}><GuardianProfilePage /></ProtectedRoute>;
+  if (pathname === '/staff') return <ProtectedRoute allowedRoles={['special_educator','therapist','psychologist','psychiatrist','school_head','school_admin']}><StaffDashboard /></ProtectedRoute>;
+  if (pathname === '/students') return <ProtectedRoute allowedRoles={['special_educator','therapist','psychologist','psychiatrist','school_head','school_admin']}><StudentsListPage /></ProtectedRoute>;
+  if (studentId && !section) return <ProtectedRoute><StudentProfilePage /></ProtectedRoute>;
+  if (studentId && section === 'edit') return <ProtectedRoute allowedRoles={['special_educator','school_head','school_admin']}><StudentEditPage /></ProtectedRoute>;
+  if (studentId && section === 'plop') return <ProtectedRoute><PLOPPage /></ProtectedRoute>;
+  if (studentId && section === 'iep') return <ProtectedRoute><IEPPage /></ProtectedRoute>;
+  if (studentId && section === 'progress') return <ProtectedRoute><ProgressPage /></ProtectedRoute>;
+  if (studentId && section === 'therapy') return <ProtectedRoute><TherapyPage /></ProtectedRoute>;
+  if (studentId && section === 'accommodations') return <ProtectedRoute><AccommodationsPage /></ProtectedRoute>;
+  if (studentId && section === 'communications') return <ProtectedRoute><CommunicationsPage /></ProtectedRoute>;
+  if (studentId && section === 'assessments') return <ProtectedRoute><AssessmentsPage /></ProtectedRoute>;
+  if (studentId && section === 'attendance') return <ProtectedRoute><AttendancePage /></ProtectedRoute>;
+  if (studentId && section === 'reviews') return <ProtectedRoute><ReviewsPage /></ProtectedRoute>;
+  if (pathname === '/reports') return <ProtectedRoute><ReportsPage /></ProtectedRoute>;
+  return <div className="min-h-screen p-12"><h1 className="text-heading-sm">Page not found</h1><button className="underline mt-4" onClick={() => router.push(user.landing_route)}>Return to dashboard</button></div>;
 }
 
 export default function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-
-            {/* Root redirect */}
-            <Route path="/" element={<RootRedirect />} />
-
-            {/* Guardian routes */}
-            <Route
-              path="/guardian"
-              element={
-                <ProtectedRoute allowedRoles={['guardian']}>
-                  <GuardianDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/guardian/profile"
-              element={
-                <ProtectedRoute allowedRoles={['guardian']}>
-                  <GuardianProfilePage />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Staff dashboard */}
-            <Route
-              path="/staff"
-              element={
-                <ProtectedRoute allowedRoles={['special_educator', 'therapist', 'psychologist', 'school_head', 'school_admin']}>
-                  <StaffDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Students */}
-            <Route
-              path="/students"
-              element={
-                <ProtectedRoute allowedRoles={['special_educator', 'therapist', 'psychologist', 'school_head', 'school_admin']}>
-                  <StudentsListPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/students/:studentId"
-              element={
-                <ProtectedRoute>
-                  <StudentProfilePage />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* IEP sub-routes */}
-            <Route
-              path="/students/:studentId/plop"
-              element={<ProtectedRoute><PLOPPage /></ProtectedRoute>}
-            />
-            <Route
-              path="/students/:studentId/iep"
-              element={<ProtectedRoute><IEPPage /></ProtectedRoute>}
-            />
-            <Route
-              path="/students/:studentId/progress"
-              element={<ProtectedRoute><ProgressPage /></ProtectedRoute>}
-            />
-            <Route
-              path="/students/:studentId/therapy"
-              element={<ProtectedRoute><TherapyPage /></ProtectedRoute>}
-            />
-            <Route
-              path="/students/:studentId/accommodations"
-              element={<ProtectedRoute><AccommodationsPage /></ProtectedRoute>}
-            />
-            <Route
-              path="/students/:studentId/communications"
-              element={<ProtectedRoute><CommunicationsPage /></ProtectedRoute>}
-            />
-            <Route
-              path="/students/:studentId/assessments"
-              element={<ProtectedRoute><AssessmentsPage /></ProtectedRoute>}
-            />
-            <Route
-              path="/students/:studentId/attendance"
-              element={<ProtectedRoute><AttendancePage /></ProtectedRoute>}
-            />
-            <Route
-              path="/students/:studentId/reviews"
-              element={<ProtectedRoute><ReviewsPage /></ProtectedRoute>}
-            />
-
-            {/* Reports */}
-            <Route
-              path="/reports"
-              element={<ProtectedRoute><ReportsPage /></ProtectedRoute>}
-            />
-
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </QueryClientProvider>
-  );
+  return <QueryClientProvider client={queryClient}><AuthProvider><Suspense fallback={<div className="min-h-screen" />}><RouteContent /></Suspense></AuthProvider></QueryClientProvider>;
 }

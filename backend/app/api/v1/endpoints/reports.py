@@ -26,7 +26,7 @@ def get_reports_summary(
             GuardianStudentLink.is_active.is_(True)
         ).all()
         student_ids = [l.student_id for l in links]
-    elif ctx.active_role in ("therapist", "psychologist"):
+    elif ctx.active_role in ("therapist", "psychologist", "psychiatrist"):
         assigned = db.query(StaffStudentAssignment).filter(
             StaffStudentAssignment.staff_user_id == ctx.user.id,
             StaffStudentAssignment.school_id == ctx.active_school_id,

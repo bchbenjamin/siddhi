@@ -18,7 +18,7 @@ export class ApiError extends Error {
   }
 }
 
-async function handleResponse<T>(res: Response): Promise<T> {
+async function handleResponse<T>(res: Response, path: string): Promise<T> {
   if (res.ok) {
     if (res.status === 204 || res.headers.get('content-length') === '0') {
       return undefined as T;
@@ -31,7 +31,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
     return res.blob() as unknown as T;
   }
 
-  if (res.status === 401) {
+  if (res.status === 401 && path !== '/auth/login') {
     // The login page intentionally calls /auth/me without a session.
     // Redirect only when an authenticated page loses its session.
     if (window.location.pathname !== '/login') {
@@ -105,7 +105,7 @@ async function request<T>(path: string, opts: RequestOptions = {}, allowRefresh 
       return request<T>(path, opts, false);
     }
   }
-  return handleResponse<T>(res);
+  return handleResponse<T>(res, path);
 }
 
 export const api = {

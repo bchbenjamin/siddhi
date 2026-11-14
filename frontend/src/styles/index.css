@@ -34,3 +34,47 @@ body {
   outline: 2px solid var(--color-burnt-amber);
   outline-offset: 2px;
 }
+
+
+/* Huddle reference system: quiet editorial surfaces and flat hairline structure. */
+:root {
+  --page-max-width: 1200px;
+  --section-gap: 64px;
+  --card-padding: 24px;
+  --element-gap: 12px;
+}
+
+body {
+  font-family: var(--font-nng);
+  font-size: 16px;
+  line-height: 1.45;
+  letter-spacing: -0.008em;
+}
+
+h1, h2, h3, h4 {
+  color: var(--color-ink-black);
+  font-family: var(--font-nng);
+  font-weight: 500;
+}
+
+/* Keep cards flat: no elevation shadows, only 1px hairline borders. */
+[class*="shadow-"] { box-shadow: none !important; }
+
+/* The visual language reserves the fully rounded treatment for primary actions. */
+button:not([aria-label="Close dialog"]) { font-family: var(--font-nng); }
+input, select, textarea {
+  border-color: var(--color-pale-sage);
+  border-radius: 8px;
+  font-family: var(--font-nng);
+}
+
+@media (min-width: 768px) {
+  main { max-width: var(--page-max-width); }
+}
+
+/* Huddle component geometry: cards are 8px, tags/pills 100px, primary CTAs 1000px. */
+.rounded-xl { border-radius: 8px !important; }
+.rounded-2xl { border-radius: 8px !important; }
+.rounded-lg { border-radius: 8px !important; }
+[class*="text-2xl"] { letter-spacing: -0.011em; }
+[class*="text-3xl"], [class*="text-4xl"] { font-weight: 400; letter-spacing: -0.021em; }

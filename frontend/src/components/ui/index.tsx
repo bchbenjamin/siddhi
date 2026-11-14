@@ -19,15 +19,15 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'bg-burnt-amber text-white hover:bg-opacity-90 border-transparent',
+    'bg-ink-black text-white hover:bg-graphite border-transparent rounded-[1000px]',
   secondary:
-    'bg-pale-sage text-ink-black hover:bg-opacity-80 border-transparent',
+    'bg-pale-sage text-ink-black hover:bg-opacity-80 border border-stone-border rounded-[100px]',
   outline:
-    'bg-transparent text-deep-violet border border-deep-violet hover:bg-pale-sage',
+    'bg-transparent text-ink-black border border-ink-black hover:bg-pale-sage rounded-[100px]',
   ghost:
-    'bg-transparent text-slate-gray hover:text-ink-black hover:bg-bone border-transparent',
+    'bg-transparent text-ink-black hover:underline border-transparent rounded-[100px]',
   danger:
-    'bg-burgundy text-white hover:bg-opacity-90 border-transparent',
+    'bg-burgundy text-white hover:bg-opacity-90 border-transparent rounded-[1000px]',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -72,7 +72,7 @@ interface CardProps {
 
 export function Card({ children, className = '', as: Tag = 'div' }: CardProps) {
   return (
-    <Tag className={`bg-white border border-bone rounded-lg p-6 ${className}`}>
+    <Tag className={`bg-white border border-stone-border rounded-lg p-6 ${className}`}>
       {children}
     </Tag>
   );
@@ -106,9 +106,9 @@ export function StatusBadge({ status }: { status: string }) {
   const label = status.replace(/_/g, ' ');
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${color}`}
+      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wide ${color}`}
     >
-      {label}
+      • {label}
     </span>
   );
 }
@@ -250,7 +250,7 @@ export function Modal({ open, onClose, title, children, footer, maxWidth = 'max-
       aria-modal="true"
       aria-labelledby="modal-title"
     >
-      <div className={`bg-white rounded-xl shadow-xl w-full ${maxWidth} max-h-[90vh] flex flex-col`}>
+      <div className={`bg-white rounded-lg border border-stone-border w-full ${maxWidth} max-h-[90vh] flex flex-col`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-bone">
           <h2 id="modal-title" className="text-lg font-medium text-ink-black">
             {title}
@@ -308,8 +308,8 @@ export function Input({
   return (
     <input
       className={`w-full px-3 py-2 text-sm border rounded-lg bg-white text-ink-black
-        placeholder:text-mist-gray focus:outline-none focus:ring-2 focus:ring-burnt-amber/50
-        ${error ? 'border-burgundy' : 'border-bone'} ${className}`}
+        placeholder:text-mist-gray focus:outline-none focus:ring-2 focus:ring-deep-violet/30
+        ${error ? 'border-burgundy' : 'border-pale-sage'} ${className}`}
       {...props}
     />
   );
@@ -323,9 +323,9 @@ export function Textarea({
   return (
     <textarea
       className={`w-full px-3 py-2 text-sm border rounded-lg bg-white text-ink-black
-        placeholder:text-mist-gray focus:outline-none focus:ring-2 focus:ring-burnt-amber/50
+        placeholder:text-mist-gray focus:outline-none focus:ring-2 focus:ring-deep-violet/30
         resize-y min-h-20
-        ${error ? 'border-burgundy' : 'border-bone'} ${className}`}
+        ${error ? 'border-burgundy' : 'border-pale-sage'} ${className}`}
       {...props}
     />
   );
@@ -340,8 +340,8 @@ export function Select({
   return (
     <select
       className={`w-full px-3 py-2 text-sm border rounded-lg bg-white text-ink-black
-        focus:outline-none focus:ring-2 focus:ring-burnt-amber/50
-        ${error ? 'border-burgundy' : 'border-bone'} ${className}`}
+        focus:outline-none focus:ring-2 focus:ring-deep-violet/30
+        ${error ? 'border-burgundy' : 'border-pale-sage'} ${className}`}
       {...props}
     >
       {children}

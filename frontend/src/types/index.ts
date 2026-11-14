@@ -18,6 +18,7 @@ export type Role =
   | 'special_educator'
   | 'therapist'
   | 'psychologist'
+  | 'psychiatrist'
   | 'school_head'
   | 'school_admin';
 

@@ -1,5 +1,5 @@
-import LegacyAppShell from '../legacy-app';
+import App from '../../src/App';
 
-export default function LegacyAppPage() {
-  return <LegacyAppShell />;
+export default function ApplicationPage() {
+  return <App />;
 }

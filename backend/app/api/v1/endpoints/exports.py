@@ -40,7 +40,7 @@ def export_iep_workbook(
         # Guardians cannot include diagnosis or guardian contact data
         include_diagnosis = False
         include_guardian_contact = False
-    elif ctx.active_role in ("therapist", "psychologist"):
+    elif ctx.active_role in ("therapist", "psychologist", "psychiatrist"):
         assigned = db.query(StaffStudentAssignment).filter(
             StaffStudentAssignment.staff_user_id == ctx.user.id,
             StaffStudentAssignment.school_id == ctx.active_school_id,

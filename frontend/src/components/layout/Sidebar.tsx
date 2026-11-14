@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink } from '../../lib/navigation';
 import {
   Home, Users, BookOpen, Heart, Menu, FileText, Calendar,
   ClipboardCheck, BarChart2, UserCog, LogOut, User, GraduationCap
@@ -6,6 +6,7 @@ import {
 import { useAuth } from '../../app/AuthContext';
 import type { Role } from '../../types';
 import { initials } from '../../lib/utils';
+import { api } from '../../lib/api';
 
 interface NavItem {
   label: string;
@@ -35,6 +36,13 @@ function getNavItems(role: Role): NavItem[] {
         { label: 'Dashboard', to: '/staff', icon: <Home size={18} /> },
         { label: 'Students', to: '/students', icon: <Users size={18} /> },
         { label: 'Therapy', to: '/students', icon: <Heart size={18} /> },
+        { label: 'Reports', to: '/reports', icon: <BarChart2 size={18} /> },
+      ];
+    case 'psychiatrist':
+      return [
+        { label: 'Dashboard', to: '/staff', icon: <Home size={18} /> },
+        { label: 'Students', to: '/students', icon: <Users size={18} /> },
+        { label: 'Medical Assessments', to: '/students', icon: <FileText size={18} /> },
         { label: 'Reports', to: '/reports', icon: <BarChart2 size={18} /> },
       ];
     case 'psychologist':
@@ -80,14 +88,14 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
       className={
         mobile
           ? 'flex flex-col w-72 max-w-[85vw] bg-white min-h-screen shadow-xl'
-          : 'hidden md:flex flex-col w-16 lg:w-56 bg-white border-r border-bone min-h-screen'
+          : 'hidden md:flex flex-col w-16 lg:w-56 bg-white border-r border-stone-border min-h-screen'
       }
       aria-label="Main navigation"
     >
       {/* Logo area */}
-      <div className="flex items-center gap-2 px-3 py-4 border-b border-bone">
-        <div className="w-8 h-8 rounded-lg bg-burnt-amber flex items-center justify-center flex-shrink-0">
-          <GraduationCap size={16} className="text-white" aria-hidden="true" />
+      <div className="flex items-center gap-2 px-3 py-4 border-b border-stone-border">
+        <div className="w-8 h-8 rounded-lg bg-pale-sage border border-stone-border flex items-center justify-center flex-shrink-0">
+          <GraduationCap size={16} className="text-ink-black" aria-hidden="true" />
         </div>
         <span className={mobile ? 'text-sm font-medium text-ink-black tracking-tight' : 'hidden lg:block text-sm font-medium text-ink-black tracking-tight'}>Siddhi</span>
       </div>
@@ -123,9 +131,23 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
           >
             {initials(user.full_name)}
           </div>
-          <div className={mobile ? 'min-w-0' : 'hidden lg:block min-w-0'}>
+          <div className={mobile ? 'min-w-0 flex-1' : 'hidden lg:block min-w-0 flex-1'}>
             <p className="text-xs font-medium text-ink-black truncate">{user.full_name}</p>
-            <p className="text-xs text-mist-gray truncate capitalize">{user.active_role.replace('_', ' ')}</p>
+            {user.roles.length > 1 ? (
+              <select
+                aria-label="Switch workspace role"
+                value={user.active_role}
+                onChange={async (event) => {
+                  await api.post('/auth/select-role', { role: event.target.value, school_id: user.active_school_id });
+                  window.location.reload();
+                }}
+                className="mt-1 max-w-full text-xs border border-pale-sage rounded-full px-2 py-1 bg-white text-slate-gray"
+              >
+                {user.roles.map((role) => <option key={role} value={role}>{role.replace(/_/g, ' ')}</option>)}
+              </select>
+            ) : (
+              <p className="text-xs text-mist-gray truncate capitalize">{user.active_role.replace(/_/g, ' ')}</p>
+            )}
           </div>
         </div>
         <button
@@ -145,7 +167,7 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
 export function MobileTopBar({ onMenuOpen }: { onMenuOpen: () => void }) {
   const { user } = useAuth();
   return (
-    <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-bone">
+    <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-stone-border">
       <button
         onClick={onMenuOpen}
         aria-label="Open navigation menu"

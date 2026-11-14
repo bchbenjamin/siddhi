@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../../lib/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { GraduationCap } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../app/AuthContext';
 import type { LoginResponse } from '../../types';
@@ -47,11 +46,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-paper-white flex flex-col items-center justify-center px-4">
       {/* Brand */}
-      <div className="flex items-center gap-2 mb-8">
-        <div className="w-10 h-10 rounded-xl bg-burnt-amber flex items-center justify-center">
-          <GraduationCap size={20} className="text-white" />
-        </div>
-        <span className="text-2xl font-medium text-ink-black tracking-tight">Siddhi</span>
+      <div className="mb-8">
+        <span className="text-sm font-medium text-ink-black tracking-[0.12em]">SIDDHI</span>
       </div>
 
       <div className="w-full max-w-sm">
@@ -77,7 +73,7 @@ export default function LoginPage() {
           ))}
         </div>
 
-        <div className="bg-white border border-bone rounded-xl p-6">
+        <div className="bg-white border border-stone-border rounded-lg p-6">
           <h1 className="text-lg font-medium text-ink-black mb-1">
             {mode === 'guardian' ? 'Sign in as Guardian' : 'Sign in as School Staff'}
           </h1>

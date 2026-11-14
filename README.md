@@ -1,186 +1,113 @@
 # Siddhi
 
-Siddhi is an individualized education program (IEP) tracking platform for
-schools, special educators, therapists, psychologists, school heads,
-administrators, and guardians.
+Siddhi is an Individualized Education Program (IEP) tracking platform for schools, special educators, therapists, psychologists, psychiatrists, school heads, administrators, and guardians.
 
-The repository contains:
+## Application architecture
 
-- A Next.js App Router application with native server-side PostgreSQL access,
-  cookie-based authentication, and role-based access control.
-- Existing FastAPI files are retained only as migration references and are not
-  deployed or used by the Next.js application.
-- Alembic migrations and synthetic demo data for local testing.
-- Excel IEP workbook export support.
+- **Next.js App Router** is the sole application runtime and serves both the frontend and same-origin `/api/v1` server routes.
+- Next.js server handlers connect directly to PostgreSQL using `pg`; authentication uses Argon2 password hashes, signed access JWTs, rotating refresh tokens, and HttpOnly cookies.
+- Role and student access checks are enforced in the server layer. Guardian visibility and staff assignment rules are applied to student data.
+- Excel exports are generated in the Next.js server using ExcelJS.
+- The former FastAPI endpoint files remain as migration/reference material and are not used by the deployed Next.js application. Python/Alembic remains the one-time schema migration and synthetic data provisioning toolchain.
 
 ## Repository map
 
 ```text
-backend/       FastAPI API, SQLAlchemy models, migrations, tests
-docs/          Design, implementation, local setup, and schema documentation
-frontend/      Next.js App Router + React + TypeScript application
-scripts/       Repeatable local startup helpers
-vercel.json    Vercel Services configuration for Next.js + FastAPI
+backend/       Legacy API reference, SQLAlchemy models, Alembic migrations, demo seed
+frontend/      Next.js App Router, server API, PostgreSQL integration, UI
+scripts/       Local database setup helpers
+docs/          Design, implementation plan, local setup, and schema documentation
+vercel.json    Single Next.js Vercel project configuration
 ```
 
 ## Requirements
 
-- Python 3.11+ (the current development environment uses `.venv`)
 - Node.js 20+
-- PostgreSQL 14+
 - npm
+- PostgreSQL 14+
+- Python 3.11+ only for Alembic migrations and the existing synthetic demo seed
 
 ## Local setup
 
-### 1. Configure environment
-
-Copy the example file and set the PostgreSQL connection and secret:
-
-```bash
-cp .env.example .env
-```
-
-Keep SMTP variables empty for local login. They are only required for password
-reset email delivery.
-
-### 2. Install backend dependencies
+1. Configure `.env` at the repository root from `.env.example`. Set `DATABASE_URL` and a long random `SECRET_KEY`. Set SMTP values if password-reset email delivery is required.
+2. Create the schema and optionally seed synthetic local data:
 
 ```bash
 python -m venv .venv
 .venv/bin/pip install -r backend/requirements.txt
-```
-
-### 3. Migrate, seed, and start the backend
-
-```bash
-./scripts/dev-start-backend.sh
-```
-
-This applies `alembic upgrade head`, runs the idempotent demo seed, and starts
-FastAPI at `http://127.0.0.1:8000`.
-
-### 4. Start the frontend
-
-In another terminal:
-
-```bash
-cd frontend
+cd backend
+../.venv/bin/alembic upgrade head
+../.venv/bin/python -m app.seed_demo
+cd ../frontend
 npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000/login`.
+Open `http://localhost:3000/login`. There is no FastAPI server to start; Next.js serves the views and API routes together.
 
-For the full local walkthrough, see
-[docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md).
+## Demo accounts (synthetic; local development only)
 
-## Demo accounts
-
-| Mode | Login identifier | Password |
-|---|---|---|
-| School staff | `FAC-ADMIN-001` | `SiddhiAdmin2026!` |
-| Guardian | `guardian.multi@siddhi.test` | `SiddhiGuardian2026!` |
-
-Staff authenticate with their faculty ID. Guardian authentication uses email.
-Staff email addresses are not accepted as login identifiers. These are
-synthetic local-only accounts; do not use them in a deployed environment.
-
-All seeded faculty IDs:
+Staff log in using their faculty ID. Guardians log in using their email address.
 
 | Faculty ID | Role | Password |
 |---|---|---|
 | `FAC-ADMIN-001` | School administrator | `SiddhiAdmin2026!` |
-| `FAC-HEAD-001` | School head | `SiddhiHead2026!` |
+| `FAC-HEAD-001` | Principal / school head | `SiddhiHead2026!` |
 | `FAC-EDU-001` | Special educator | `SiddhiEducator2026!` |
 | `FAC-EDU-002` | Special educator | `SiddhiEducator2026!` |
 | `FAC-THER-001` | Therapist | `SiddhiTherapy2026!` |
 | `FAC-PSY-001` | Psychologist | `SiddhiPsych2026!` |
+| `FAC-PSYCH-001` | Psychiatrist | `SiddhiPsychiatrist2026!` |
 
-## API
+| Guardian email | Password |
+|---|---|
+| `guardian.single@siddhi.test` | `SiddhiGuardian2026!` |
+| `guardian.multi@siddhi.test` | `SiddhiGuardian2026!` |
 
-- Health: `GET /health`
-- OpenAPI in development: `GET /docs`
+The demo seed includes student records, not student login accounts. The implementation plan defines guardian and school staff workspaces; it does not define a student login role or student credentials. Do not use these synthetic accounts on the production site.
+
+If the demo school already exists, rerunning the seed ensures the psychiatrist demo account, membership, and sample student assignment exist without duplicating the rest of the data.
+
+## API and health
+
+- Health: `GET /api/health`
 - API prefix: `/api/v1`
-- Authentication uses secure HttpOnly access and refresh cookies.
-- The frontend uses `/api/v1` through the Next.js same-origin API bridge.
-- The Next.js server connects directly to PostgreSQL. There is no backend URL,
-separate API service, or browser CORS dependency.
+- Authentication: `/api/v1/auth/*`
+- The browser calls same-origin Next.js routes; no separate API origin or CORS configuration is required.
 
 ## Database
 
-The complete current schema, relationships, constraints, and deletion rules
-are documented in [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md).
-
-Apply migrations manually with:
+The PostgreSQL schema and relationships are documented in [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md). Apply schema migrations with:
 
 ```bash
 cd backend
 ../.venv/bin/alembic upgrade head
 ```
 
-Run the seed manually with:
+Do not run the synthetic demo seed in production unless you explicitly intend to create demo records and demo login accounts.
 
-```bash
-cd backend
-../.venv/bin/python -m app.seed_demo
-```
-
-## Testing and validation
-
-Frontend production build:
+## Validation
 
 ```bash
 cd frontend
+npm run lint
+npx tsc --noEmit
+npm test -- --run
 npm run build
 ```
 
-Frontend lint configuration is not currently included in the repository, so
-`npm run lint` requires an ESLint flat config before it can run.
+Backend schema/seed code is still Python-based tooling; it is not part of the deployed request path.
 
-Backend tests:
+## Vercel deployment
 
-```bash
-cd backend
-../.venv/bin/pytest -q
-```
+The repository root is the Vercel Root Directory. `vercel.json` builds the Next.js app from `frontend/`. Required environment variables include `DATABASE_URL` and `SECRET_KEY`. Set `FRONTEND_ORIGIN` to the deployed origin. For password resets, configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, and `SMTP_FROM`.
 
-Backend tests require a reachable PostgreSQL database configured by `.env`.
-
-## Next.js and Vercel deployment
-
-The repository root is the Root Directory for the single `siddhi` Vercel
-project. [vercel.json](vercel.json) explicitly builds the Next.js application
-from `frontend/`. The Next.js server connects directly to Neon PostgreSQL
-through server route handlers.
-
-- **Framework preset:** Next.js
-- **Root Directory:** repository root (`.`)
-- **Environment variable:** `DATABASE_URL` (required)
-- **Environment variable:** `SECRET_KEY` (required)
-
-For the unified Vercel project, set at minimum:
-
-```text
-APP_ENV=production
-DATABASE_URL=<managed PostgreSQL URL>
-SECRET_KEY=<long random secret>
-FRONTEND_ORIGIN=https://<your-vercel-domain>
-ALLOWED_ORIGINS=[]
-```
-
-Run migrations against Neon before deploying schema changes:
-
-```bash
-alembic upgrade head
-```
-
-Do not run the demo seed in production unless you intentionally want the
-synthetic demo school and users.
+Apply schema migrations against the target PostgreSQL database before deploying schema changes. Do not run the demo seed against production by default.
 
 ## Documentation
 
 - [Design reference](docs/DESIGN.md)
 - [Implementation plan](docs/SIDDHI_IMPLEMENTATION_PLAN.md)
-- [Local development and login](docs/LOCAL_DEVELOPMENT.md)
+- [Local development](docs/LOCAL_DEVELOPMENT.md)
 - [Database schema](docs/DATABASE_SCHEMA.md)
 - [Build status](BUILD_STATUS.md)
