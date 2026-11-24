@@ -2,6 +2,7 @@ import uuid
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.core.database import get_db
 from app.core.permissions import get_current_user_context, AuthContext, require_roles
 from app.models.entities import (
@@ -10,7 +11,6 @@ from app.models.entities import (
 )
 
 router = APIRouter()
-
 
 @router.get("/summary")
 def get_reports_summary(
@@ -42,7 +42,7 @@ def get_reports_summary(
         student_ids = [s.id for s in all_students]
 
     if not student_ids:
-        return {"total_students": 0, "active_plans": 0, "total_goals": 0, "students": []}
+        return {"total_students": 0, "active_plans": 0, "total_goals": 0, "students": [], "class_breakdown": []}
 
     total_students = len(student_ids)
     active_plans = db.query(IEPPlan).filter(
@@ -61,6 +61,15 @@ def get_reports_summary(
         IEPGoal.school_id == ctx.active_school_id,
         IEPGoal.status == "achieved"
     ).count()
+
+    # Class breakdown aggregation
+    class_breakdown = (
+        db.query(Student.grade_class, func.count(Student.id).label("count"))
+        .filter(Student.id.in_(student_ids))
+        .group_by(Student.grade_class)
+        .all()
+    )
+    class_breakdown = [{"grade_class": gc, "count": cnt} for gc, cnt in class_breakdown]
 
     # Student summaries
     student_summaries = []
@@ -95,4 +104,5 @@ def get_reports_summary(
         "total_goals": total_goals,
         "achieved_goals": achieved_goals,
         "students": student_summaries,
+        "class_breakdown": class_breakdown,
     }

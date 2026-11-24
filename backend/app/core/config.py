@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     APP_NAME: str = "Siddhi"
     API_PREFIX: str = "/api/v1"
-    DATABASE_URL: str = "postgresql+psycopg://siddhi_user:siddhi_password@127.0.0.1:5432/siddhi"
+    DATABASE_URL: str = "sqlite:///./var/dev.db"
     SECRET_KEY: str = "dev-secret-key-please-change-in-production-1234567890"
     ACCESS_TOKEN_MINUTES: int = 20
     SESSION_REFRESH_DAYS: int = 7

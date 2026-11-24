@@ -938,8 +938,8 @@ The README describes a local/test seed that provisions one school, staff and gua
 
 | Student | Admission no. | DOB | Grade/class | Category | Linked guardian |
 |---|---|---|---|---|---|
-| Aarav Patel | `ADM-2026-001` | 15 Apr 2017 | Grade 3-B | Autism Spectrum Disorder | Sunita Patel |
-| Diya Iyer | `ADM-2026-002` | 22 Aug 2015 | Grade 5-A | Specific Learning Disability | Meera Iyer |
+<!-- Example student entries removed; see `seed_credentials.json` for actual admission numbers and details. --> Sunita Patel |
+<!-- Example student entry removed -->
 | Vivaan Iyer | `ADM-2026-003` | 5 Nov 2018 | Grade 2-C | ADHD with Speech Delay | Meera Iyer |
 | Rohan Sen | `ADM-2026-004` | 19 Jan 2016 | Grade 4-A | Locomotor Disability (Cerebral Palsy) | No guardian account linked |
 | Maya Rao | `ADM-2026-005` | 30 May 2014 | Grade 6-B | Intellectual Disability (Mild) | No guardian account linked |

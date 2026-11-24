@@ -1,5 +1,7 @@
 import uuid
-from datetime import date, datetime, timedelta, timezone
+import argparse
+import json
+from datetime import date, datetime, timezone
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.core.security import get_password_hash
@@ -8,92 +10,90 @@ from app.models.entities import (
     StaffStudentAssignment, PresentLevelRecord, IEPPlan, IEPGoal,
     GoalObjective, ProgressEntry, TherapySession, Accommodation,
     ParentInteraction, AssessmentRecord, AttendanceRecord,
-    IEPReview, IEPApproval
+    IEPReview, IEPApproval,
 )
+# Great generator library for synthetic data
+try:
+    from great_generator import generate_students, generate_staff, generate_guardians
+except ImportError:
+    # Fallback simple generator using Faker for students
+    from faker import Faker
+    import random
+    fake = Faker()
+    def generate_students(n):
+        students = []
+        for i in range(n):
+            admission = f"ADM-{2026+i:04d}"
+            name = fake.name()
+            dob = fake.date_of_birth(minimum_age=5, maximum_age=18)
+            gender = random.choice(['Male', 'Female'])
+            category = random.choice(['Autism Spectrum Disorder', 'Specific Learning Disability', 'ADHD', 'Locomotor Disability', 'Intellectual Disability'])
+            enrollment_date = fake.date_between(start_date='-5y', end_date='today')
+            grade = f"Grade {random.randint(1,12)}-{random.choice(['A','B','C'])}"
+            students.append({
+                "admission_number": admission,
+                "full_name": name,
+                "date_of_birth": dob,
+                "gender": gender,
+                "disability_category": category,
+                "enrollment_date": enrollment_date,
+                "grade_class": grade,
+                "diagnosis": "",
+                "strengths": "",
+                "areas_of_need": "",
+                "learning_style": "",
+                "languages_known": "English",
+                "assistive_devices": "",
+            })
+        return students
+    def generate_staff(n):
+        return []
+    def generate_guardians(n):
+        return []
 
+def truncate_tables(db: Session):
+    """Truncate all tables in proper order for SQLite.
+    Uses DELETE FROM for each table and resets AUTOINCREMENT.
+    Ignores missing tables (e.g., during early runs).
+    """
+    from sqlalchemy import text
+    from sqlalchemy.exc import OperationalError
+    tables = [
+        "guardian_student_links",
+        "staff_student_assignments",
+        "attendance_records",
+        "assessment_records",
+        "parent_interactions",
+        "accommodations",
+        "therapy_sessions",
+        "progress_entries",
+        "goal_objectives",
+        "iep_goals",
+        "iep_plans",
+        "present_level_records",
+        "students",
+        "users",
+        "school_memberships",
+        "schools",
+    ]
+    for tbl in tables:
+        try:
+            db.execute(text(f"DELETE FROM {tbl};"))
+            if db.bind.dialect.name == "sqlite": db.execute(text(f"DELETE FROM sqlite_sequence WHERE name='{tbl}';"))
+        except OperationalError:
+            # Table may not exist yet; ignore
+            continue
+    db.commit()
 
 def seed_database():
+    parser = argparse.ArgumentParser(description="Seed the Siddhi database.")
+    parser.add_argument("--reset", action="store_true", help="Truncate tables before seeding.")
+    args, _ = parser.parse_known_args()
+
     db: Session = SessionLocal()
     try:
-        school = db.query(School).filter(School.code == "SJA-001").first()
-        if school:
-            school.is_active = True
-            accounts = [
-                ("admin@siddhi.test", "Sanjay Deshmukh (Admin)", "SiddhiAdmin2026!", "555-0101", "FAC-ADMIN-001", "school_admin"),
-                ("principal@siddhi.test", "Dr. Shalini Menon (School Head)", "SiddhiHead2026!", "555-0102", "FAC-HEAD-001", "school_head"),
-                ("educator1@siddhi.test", "Ananya Sharma (Special Educator)", "SiddhiEducator2026!", "555-0103", "FAC-EDU-001", "special_educator"),
-                ("educator2@siddhi.test", "Rajesh Kumar (Special Educator)", "SiddhiEducator2026!", "555-0104", "FAC-EDU-002", "special_educator"),
-                ("therapist@siddhi.test", "Priya Nair (Lead Therapist)", "SiddhiTherapy2026!", "555-0105", "FAC-THER-001", "therapist"),
-                ("psychologist@siddhi.test", "Dr. Arjun Verma (Psychologist)", "SiddhiPsych2026!", "555-0106", "FAC-PSY-001", "psychologist"),
-                ("psychiatrist@siddhi.test", "Dr. Kavita Rao (Psychiatrist)", "SiddhiPsychiatrist2026!", "555-0109", "FAC-PSYCH-001", "psychiatrist"),
-                ("guardian.single@siddhi.test", "Sunita Patel", "SiddhiGuardian2026!", "555-0107", None, "guardian"),
-                ("guardian.multi@siddhi.test", "Meera Iyer", "SiddhiGuardian2026!", "555-0108", None, "guardian"),
-                ("aarav.student@siddhi.test", "Aarav Patel", "SiddhiStudent2026!", "555-0111", None, "student"),
-            ]
-            users = {}
-            for email, name, password, phone, faculty_id, role in accounts:
-                user = db.query(User).filter(User.email == email).first()
-                if not user:
-                    user = User(id=uuid.uuid4(), email=email)
-                    db.add(user)
-                user.full_name, user.password_hash, user.phone = name, get_password_hash(password), phone
-                user.faculty_id, user.is_active = faculty_id, True
-                db.flush()
-                users[email] = user
-                membership = db.query(SchoolMembership).filter_by(school_id=school.id, user_id=user.id, role=role).first()
-                if not membership:
-                    db.add(SchoolMembership(school_id=school.id, user_id=user.id, role=role, is_active=True))
-                else:
-                    membership.is_active = True
-
-            student_specs = [
-                ("ADM-2026-001", "Aarav Patel", date(2017,4,15), "Male", "Autism Spectrum Disorder", date(2023,6,12), "Grade 3-B", "Mild to moderate autism spectrum disorder with sensory sensitivity", "Exceptional visual pattern recognition, highly focused on digital tools, gentle temperament", "Expressive verbal communication, social peer interaction, sensory processing in loud areas", "Visual and kinesthetic with structured visual timetable", "English, Hindi, Gujarati", "Noise-cancelling headphones, AAC communication tablet"),
-                ("ADM-2026-002", "Diya Iyer", date(2015,8,22), "Female", "Specific Learning Disability", date(2022,6,10), "Grade 5-A", "Dyslexia with phonological processing deficit", "Creative storytelling, strong conceptual comprehension, enthusiastic in art and drama", "Reading fluency, decoding unfamiliar multi-syllabic words, spelling accuracy", "Multisensory Orton-Gillingham approach, audio-supported reading", "English, Tamil", "Speech-to-text software, coloured reading overlays"),
-                ("ADM-2026-003", "Vivaan Iyer", date(2018,11,5), "Male", "ADHD with Speech Delay", date(2024,6,15), "Grade 2-C", "ADHD combined presentation with articulation delay", "High energy, curious, friendly, excels in physical activities and mathematics", "Sustained attention during seated desk work, articulation of consonant blends", "Frequent movement breaks, tactile learning aids, short task increments", "English, Tamil, Hindi", "Wobble stool, timer visual cue"),
-                ("ADM-2026-004", "Rohan Sen", date(2016,1,19), "Male", "Locomotor Disability (Cerebral Palsy)", date(2023,6,12), "Grade 4-A", "Spastic diplegia cerebral palsy", "Analytical reasoning, strong auditory memory, active participant in class discussions", "Fine motor grip for sustained writing, physical mobility between floors", "Auditory and oral responses, computer-assisted typing", "English, Bengali", "Walker, adapted pencil grip, accessible keyboard"),
-                ("ADM-2026-005", "Maya Rao", date(2014,5,30), "Female", "Intellectual Disability (Mild)", date(2021,6,14), "Grade 6-B", "Mild intellectual disability with adaptive functioning needs", "Eager to help, cooperative, diligent, enjoys functional life skills activities", "Abstract mathematical concepts, independent self-management of complex routines", "Step-by-step task analysis, visual checklists, repeated practical practice", "English, Kannada", "Visual schedule watch, calculator"),
-            ]
-            students = {}
-            for spec in student_specs:
-                (admission, name, dob, gender, category, enrolled, grade, diagnosis,
-                 strengths, needs, learning_style, languages, devices) = spec
-                student = db.query(Student).filter_by(school_id=school.id, admission_number=admission).first()
-                if not student:
-                    student = Student(id=uuid.uuid4(), school_id=school.id, admission_number=admission, full_name=name, date_of_birth=dob, gender=gender, disability_category=category, enrollment_date=enrolled, grade_class=grade)
-                    db.add(student)
-                student.full_name, student.date_of_birth, student.gender = name, dob, gender
-                student.disability_category, student.enrollment_date, student.grade_class = category, enrolled, grade
-                student.diagnosis, student.strengths, student.areas_of_need = diagnosis, strengths, needs
-                student.learning_style, student.languages_known, student.assistive_devices = learning_style, languages, devices
-                student.is_active = True
-                db.flush()
-                students[admission] = student
-
-            aarav_student_user = users["aarav.student@siddhi.test"]
-            students["ADM-2026-001"].login_user_id = aarav_student_user.id
-
-            links = [("guardian.single@siddhi.test", "ADM-2026-001"), ("guardian.multi@siddhi.test", "ADM-2026-002"), ("guardian.multi@siddhi.test", "ADM-2026-003")]
-            for email, admission in links:
-                guardian, student = users[email], students[admission]
-                link = db.query(GuardianStudentLink).filter_by(guardian_user_id=guardian.id, student_id=student.id).first()
-                if not link:
-                    db.add(GuardianStudentLink(school_id=school.id, guardian_user_id=guardian.id, student_id=student.id, relationship_label="Mother", is_primary=True, is_active=True))
-                else:
-                    link.is_active, link.relationship_label = True, "Mother"
-
-            assignments = [("educator1@siddhi.test","ADM-2026-001","special_educator"),("therapist@siddhi.test","ADM-2026-001","speech_therapist"),("psychologist@siddhi.test","ADM-2026-001","psychologist"),("psychiatrist@siddhi.test","ADM-2026-001","psychiatrist"),("educator1@siddhi.test","ADM-2026-002","special_educator"),("educator2@siddhi.test","ADM-2026-003","special_educator"),("therapist@siddhi.test","ADM-2026-003","speech_therapist"),("educator2@siddhi.test","ADM-2026-004","special_educator"),("educator2@siddhi.test","ADM-2026-005","special_educator")]
-            for email, admission, kind in assignments:
-                staff, student = users[email], students[admission]
-                assignment = db.query(StaffStudentAssignment).filter_by(school_id=school.id, staff_user_id=staff.id, student_id=student.id, assignment_type=kind).first()
-                if not assignment:
-                    db.add(StaffStudentAssignment(school_id=school.id, staff_user_id=staff.id, student_id=student.id, assignment_type=kind, is_active=True))
-                else:
-                    assignment.is_active = True
-            db.commit()
-            print("Demo seed refreshed: 10 login accounts, 5 student profiles, guardian links and staff assignments.")
-            return
-
-        print("Seeding synthetic demo records into PostgreSQL...")
+        if args.reset:
+            truncate_tables(db)
 
         # 1. School
         school = School(
@@ -101,12 +101,12 @@ def seed_database():
             name="St. Jude Inclusive Academy",
             code="SJA-001",
             address="12 Garden Valley Road, Knowledge Hub",
-            is_active=True
+            is_active=True,
         )
         db.add(school)
         db.commit()
 
-        # Helper to create user
+        # Helper functions
         def make_user(email: str, name: str, password: str, phone: str = "555-0100", faculty_id: str | None = None):
             u = User(
                 id=uuid.uuid4(),
@@ -115,409 +115,393 @@ def seed_database():
                 password_hash=get_password_hash(password),
                 full_name=name,
                 phone=phone,
-                is_active=True
+                is_active=True,
             )
             db.add(u)
             db.commit()
             return u
 
-        # Helper to add membership
         def add_membership(user_id: uuid.UUID, role: str):
             mem = SchoolMembership(
                 id=uuid.uuid4(),
                 school_id=school.id,
                 user_id=user_id,
                 role=role,
-                is_active=True
+                is_active=True,
             )
             db.add(mem)
             db.commit()
             return mem
 
-        # 2. Staff & Guardian Users
-        admin_user = make_user("admin@siddhi.test", "Sanjay Deshmukh (Admin)", "SiddhiAdmin2026!", "555-0101", "FAC-ADMIN-001")
-        add_membership(admin_user.id, "school_admin")
+        # 2. Staff & Guardian accounts (including a demo student for quick test)
+        accounts = []
+        # Core admin accounts
+        accounts.append(("admin@siddhi.test", "Sanjay Deshmukh (Admin)", "SiddhiAdmin2026!", "555-0101", "FAC-ADMIN-001", "school_admin"))
+        accounts.append(("principal@siddhi.test", "Dr. Shalini Menon (School Head)", "SiddhiHead2026!", "555-0102", "FAC-HEAD-001", "school_head"))
+        # Generate 15 special educators
+        for i in range(1, 16):
+            accounts.append((f"educator{i}@siddhi.test", f"Educator {i} (Special Educator)", "SiddhiEducator2026!", f"555-01{i:03d}", f"FAC-EDU-{i:03d}", "special_educator"))
+        # Generate 15 therapists
+        for i in range(1, 16):
+            accounts.append((f"therapist{i}@siddhi.test", f"Therapist {i} (Lead Therapist)", "SiddhiTherapy2026!", f"555-02{i:03d}", f"FAC-THER-{i:03d}", "therapist"))
+        # Generate 15 psychologists
+        for i in range(1, 16):
+            accounts.append((f"psychologist{i}@siddhi.test", f"Psychologist {i}", "SiddhiPsych2026!", f"555-03{i:03d}", f"FAC-PSY-{i:03d}", "psychologist"))
+        # Generate 15 psychiatrists
+        for i in range(1, 16):
+            accounts.append((f"psychiatrist{i}@siddhi.test", f"Psychiatrist {i}", "SiddhiPsychiatrist2026!", f"555-04{i:03d}", f"FAC-PSYCH-{i:03d}", "psychiatrist"))
+        # Demo guardians and demo student (kept for compatibility)
+        accounts.append(("guardian.single@siddhi.test", "Sunita Patel", "SiddhiGuardian2026!", "555-0107", None, "guardian"))
+        accounts.append(("guardian.multi@siddhi.test", "Meera Iyer", "SiddhiGuardian2026!", "555-0108", None, "guardian"))
+        accounts.append(("aarav.student@siddhi.test", "Aarav Patel", "SiddhiStudent2026!", "555-0111", None, "student"))
+        users = {}
+        for email, name, pwd, phone, fac_id, role in accounts:
+            user = make_user(email, name, pwd, phone, fac_id)
+            add_membership(user.id, role)
+            users[email] = user
 
-        head_user = make_user("principal@siddhi.test", "Dr. Shalini Menon (School Head)", "SiddhiHead2026!", "555-0102", "FAC-HEAD-001")
-        add_membership(head_user.id, "school_head")
+        # 3. Generate 500 synthetic students using great-generator
+        synthetic_students = generate_students(500)
+        # Expect each dict to contain keys matching our Student model fields; adjust if needed.
+        student_password = "StudentPass2026!"
+        all_credentials = []
+        for spec in synthetic_students:
+            # Mapping – assume spec provides: admission_number, full_name, date_of_birth (date), gender,
+            # disability_category, enrollment_date, grade_class, diagnosis, strengths, areas_of_need,
+            # learning_style, languages_known, assistive_devices
+            admission = spec.get("admission_number") or f"ADM-{uuid.uuid4().hex[:8].upper()}"
+            name = spec.get("full_name", "Student")
+            dob = spec.get("date_of_birth", date(2015, 1, 1))
+            gender = spec.get("gender", "Other")
+            category = spec.get("disability_category", "Other")
+            enrolled = spec.get("enrollment_date", date.today())
+            grade = spec.get("grade_class", "Grade 1-A")
+            diagnosis = spec.get("diagnosis", "")
+            strengths = spec.get("strengths", "")
+            needs = spec.get("areas_of_need", "")
+            learning_style = spec.get("learning_style", "")
+            languages = spec.get("languages_known", "English")
+            devices = spec.get("assistive_devices", "")
 
-        edu1_user = make_user("educator1@siddhi.test", "Ananya Sharma (Special Educator)", "SiddhiEducator2026!", "555-0103", "FAC-EDU-001")
-        add_membership(edu1_user.id, "special_educator")
-
-        edu2_user = make_user("educator2@siddhi.test", "Rajesh Kumar (Special Educator)", "SiddhiEducator2026!", "555-0104", "FAC-EDU-002")
-        add_membership(edu2_user.id, "special_educator")
-
-        therapist_user = make_user("therapist@siddhi.test", "Priya Nair (Lead Therapist)", "SiddhiTherapy2026!", "555-0105", "FAC-THER-001")
-        add_membership(therapist_user.id, "therapist")
-
-        psych_user = make_user("psychologist@siddhi.test", "Dr. Arjun Verma (Psychologist)", "SiddhiPsych2026!", "555-0106", "FAC-PSY-001")
-        add_membership(psych_user.id, "psychologist")
-
-        psychiatrist_user = make_user("psychiatrist@siddhi.test", "Dr. Kavita Rao (Psychiatrist)", "SiddhiPsychiatrist2026!", "555-0109", "FAC-PSYCH-001")
-        add_membership(psychiatrist_user.id, "psychiatrist")
-
-        # Guardian with exactly one child
-        guardian1_user = make_user("guardian.single@siddhi.test", "Sunita Patel", "SiddhiGuardian2026!", "555-0107")
-        add_membership(guardian1_user.id, "guardian")
-
-        # Guardian with two children
-        guardian2_user = make_user("guardian.multi@siddhi.test", "Meera Iyer", "SiddhiGuardian2026!", "555-0108")
-        add_membership(guardian2_user.id, "guardian")
-
-        aarav_student_user = make_user("aarav.student@siddhi.test", "Aarav Patel", "SiddhiStudent2026!", "555-0111")
-        add_membership(aarav_student_user.id, "student")
-
-        # 3. Students
-        # Child 1: Aarav Patel (linked to guardian1)
-        student1 = Student(
-            id=uuid.uuid4(),
-            school_id=school.id,
-            admission_number="ADM-2026-001",
-            full_name="Aarav Patel",
-            date_of_birth=date(2017, 4, 15),
-            gender="Male",
-            disability_category="Autism Spectrum Disorder",
-            udid_number_encrypted="UDID-MH-12345-ENC",
-            enrollment_date=date(2023, 6, 12),
-            grade_class="Grade 3-B",
-            diagnosis="Mild to moderate autism spectrum disorder with sensory sensitivity",
-            strengths="Exceptional visual pattern recognition, highly focused on digital tools, gentle temperament",
-            areas_of_need="Expressive verbal communication, social peer interaction, sensory processing in loud areas",
-            learning_style="Visual and kinesthetic with structured visual timetable",
-            languages_known="English, Hindi, Gujarati",
-            assistive_devices="Noise-cancelling headphones, AAC communication tablet",
-            is_active=True
-        )
-
-        # Child 2: Diya Iyer (linked to guardian2)
-        student2 = Student(
-            id=uuid.uuid4(),
-            school_id=school.id,
-            admission_number="ADM-2026-002",
-            full_name="Diya Iyer",
-            date_of_birth=date(2015, 8, 22),
-            gender="Female",
-            disability_category="Specific Learning Disability",
-            udid_number_encrypted="UDID-MH-54321-ENC",
-            enrollment_date=date(2022, 6, 10),
-            grade_class="Grade 5-A",
-            diagnosis="Dyslexia with phonological processing deficit",
-            strengths="Creative storytelling, strong conceptual comprehension, enthusiastic in art and drama",
-            areas_of_need="Reading fluency, decoding unfamiliar multi-syllabic words, spelling accuracy",
-            learning_style="Multisensory Orton-Gillingham approach, audio-supported reading",
-            languages_known="English, Tamil",
-            assistive_devices="Speech-to-text software, coloured reading overlays",
-            is_active=True
-        )
-
-        # Child 3: Vivaan Iyer (linked to guardian2)
-        student3 = Student(
-            id=uuid.uuid4(),
-            school_id=school.id,
-            admission_number="ADM-2026-003",
-            full_name="Vivaan Iyer",
-            date_of_birth=date(2018, 11, 5),
-            gender="Male",
-            disability_category="ADHD with Speech Delay",
-            udid_number_encrypted="UDID-MH-67890-ENC",
-            enrollment_date=date(2024, 6, 15),
-            grade_class="Grade 2-C",
-            diagnosis="ADHD combined presentation with articulation delay",
-            strengths="High energy, curious, friendly, excels in physical activities and mathematics",
-            areas_of_need="Sustained attention during seated desk work, articulation of consonant blends",
-            learning_style="Frequent movement breaks, tactile learning aids, short task increments",
-            languages_known="English, Tamil, Hindi",
-            assistive_devices="Wobble stool, timer visual cue",
-            is_active=True
-        )
-
-        # Child 4: Rohan Sen
-        student4 = Student(
-            id=uuid.uuid4(),
-            school_id=school.id,
-            admission_number="ADM-2026-004",
-            full_name="Rohan Sen",
-            date_of_birth=date(2016, 1, 19),
-            gender="Male",
-            disability_category="Locomotor Disability (Cerebral Palsy)",
-            udid_number_encrypted="UDID-MH-11223-ENC",
-            enrollment_date=date(2023, 6, 12),
-            grade_class="Grade 4-A",
-            diagnosis="Spastic diplegia cerebral palsy",
-            strengths="Analytical reasoning, strong auditory memory, active participant in class discussions",
-            areas_of_need="Fine motor grip for sustained writing, physical mobility between floors",
-            learning_style="Auditory and oral responses, computer-assisted typing",
-            languages_known="English, Bengali",
-            assistive_devices="Walker, adapted pencil grip, accessible keyboard",
-            is_active=True
-        )
-
-        # Child 5: Maya Rao
-        student5 = Student(
-            id=uuid.uuid4(),
-            school_id=school.id,
-            admission_number="ADM-2026-005",
-            full_name="Maya Rao",
-            date_of_birth=date(2014, 5, 30),
-            gender="Female",
-            disability_category="Intellectual Disability (Mild)",
-            udid_number_encrypted="UDID-MH-99887-ENC",
-            enrollment_date=date(2021, 6, 14),
-            grade_class="Grade 6-B",
-            diagnosis="Mild intellectual disability with adaptive functioning needs",
-            strengths="Eager to help, cooperative, diligent, enjoys functional life skills activities",
-            areas_of_need="Abstract mathematical concepts, independent self-management of complex routines",
-            learning_style="Step-by-step task analysis, visual checklists, repeated practical practice",
-            languages_known="English, Kannada",
-            assistive_devices="Visual schedule watch, calculator",
-            is_active=True
-        )
-
-        db.add_all([student1, student2, student3, student4, student5])
-        student1.login_user_id = aarav_student_user.id
-        db.commit()
-
-        # 4. Guardian Links
-        link1 = GuardianStudentLink(
-            school_id=school.id,
-            guardian_user_id=guardian1_user.id,
-            student_id=student1.id,
-            relationship_label="Mother",
-            is_primary=True,
-            is_active=True
-        )
-        link2 = GuardianStudentLink(
-            school_id=school.id,
-            guardian_user_id=guardian2_user.id,
-            student_id=student2.id,
-            relationship_label="Mother",
-            is_primary=True,
-            is_active=True
-        )
-        link3 = GuardianStudentLink(
-            school_id=school.id,
-            guardian_user_id=guardian2_user.id,
-            student_id=student3.id,
-            relationship_label="Mother",
-            is_primary=True,
-            is_active=True
-        )
-        db.add_all([link1, link2, link3])
-        db.commit()
-
-        # 5. Staff Student Assignments
-        db.add_all([
-            StaffStudentAssignment(school_id=school.id, staff_user_id=edu1_user.id, student_id=student1.id, assignment_type="special_educator", is_active=True),
-            StaffStudentAssignment(school_id=school.id, staff_user_id=therapist_user.id, student_id=student1.id, assignment_type="speech_therapist", is_active=True),
-            StaffStudentAssignment(school_id=school.id, staff_user_id=psych_user.id, student_id=student1.id, assignment_type="psychologist", is_active=True),
-            StaffStudentAssignment(school_id=school.id, staff_user_id=psychiatrist_user.id, student_id=student1.id, assignment_type="psychiatrist", is_active=True),
-            StaffStudentAssignment(school_id=school.id, staff_user_id=edu1_user.id, student_id=student2.id, assignment_type="special_educator", is_active=True),
-            StaffStudentAssignment(school_id=school.id, staff_user_id=edu2_user.id, student_id=student3.id, assignment_type="special_educator", is_active=True),
-            StaffStudentAssignment(school_id=school.id, staff_user_id=therapist_user.id, student_id=student3.id, assignment_type="speech_therapist", is_active=True),
-            StaffStudentAssignment(school_id=school.id, staff_user_id=edu2_user.id, student_id=student4.id, assignment_type="special_educator", is_active=True),
-            StaffStudentAssignment(school_id=school.id, staff_user_id=edu2_user.id, student_id=student5.id, assignment_type="special_educator", is_active=True),
-        ])
-        db.commit()
-
-        # 6. PLOP Records for Student 1 across all 9 domains
-        domains = [
-            ("academic", "Performs single-digit addition with visual tokens; identifies letters but struggles with reading sentences independently.", "Teacher assessment and reading inventory", "Grade 1 level"),
-            ("communication", "Uses 2-word verbal phrases and pointing; communicates effectively using AAC symbol app for requests.", "Language sample & SLP checklist", "Emerging 2-word requests"),
-            ("social_skills", "Engages in parallel play; requires adult prompting to share toys or initiate greetings with peers.", "Social observation rubrics", "Parallel play with peer prompt"),
-            ("behaviour", "Exhibits occasional hand-flapping when excited; self-regulates with sensory break corner without disruption.", "Functional Behaviour Assessment", "2 sensory breaks/day needed"),
-            ("motor_skills", "Good gross motor coordination in walking and running; fine motor pincer grasp is developing for scissors.", "OT motor assessment", "Emerging tripod grasp"),
-            ("cognitive_skills", "High ability in geometric matching and computer pattern games; requires scaffolding for sequencing tasks.", "Cognitive profile subtests", "Superior visual pattern score"),
-            ("adl", "Independent with handwashing and snack eating; needs supervision for shoe laces and school bag packing.", "Vineland Adaptive Behavior Scale", "Partially independent (70%)"),
-            ("emotional_development", "Expresses calm demeanor in structured settings; shows anxiety during sudden fire drill alarms.", "Emotional regulation inventory", "Alert to unannounced noises"),
-            ("vocational_skills", "Follows 3-step classroom clean-up routines eagerly; organizes library book bins accurately.", "Pre-vocational chore check", "Completes sorting tasks 90%")
-        ]
-        for dom, perf, meth, base in domains:
-            plop = PresentLevelRecord(
+            # Create Student record
+            student = Student(
+                id=uuid.uuid4(),
                 school_id=school.id,
-                student_id=student1.id,
-                domain=dom,
-                current_performance=perf,
-                assessment_method=meth,
-                baseline_value=base,
-                remarks="Baseline established at start of academic year 2026-2027.",
-                assessed_by_user_id=edu1_user.id,
-                assessed_at=date(2026, 6, 20),
-                guardian_visible=True
+                admission_number=admission,
+                full_name=name,
+                date_of_birth=dob,
+                gender=gender,
+                disability_category=category,
+                enrollment_date=enrolled,
+                grade_class=grade,
+                diagnosis=diagnosis,
+                strengths=strengths,
+                areas_of_need=needs,
+                learning_style=learning_style,
+                languages_known=languages,
+                assistive_devices=devices,
+                is_active=True,
             )
-            db.add(plop)
-        db.commit()
+            db.add(student)
+            db.flush()
+            # Create linked User for login
+            email = f"{admission.lower()}@student.siddhi.test"
+            user = make_user(email, name, student_password, phone="555-0123")
+            # Bind login
+            student.login_user_id = user.id
+            db.add(student)  # update with login_user_id
+            db.flush()
+            # Add school membership for the student user
+            add_membership(user.id, "student")
+            # Record credential
+            all_credentials.append({
+                "role": "student",
+                "admission_number": admission,
+                "email": email,
+                "password": student_password,
+                "grade_class": grade,
+            })
 
-        # 7. IEP Plans & Goals for Student 1
-        plan1 = IEPPlan(
-            school_id=school.id,
-            student_id=student1.id,
-            academic_year="2026-2027",
-            start_date=date(2026, 6, 1),
-            end_date=date(2027, 4, 30),
-            status="active",
-            version=1,
-            created_by_user_id=edu1_user.id,
-            approved_at=datetime(2026, 6, 25, 10, 0, tzinfo=timezone.utc)
-        )
-        db.add(plan1)
-        db.commit()
+# 4. Guardian links (simple 1‑to‑many mapping for demo purposes)
+        # Generate a pool of 200 guardian accounts (including the original two)
+        guardian_emails = [f"guardian{i}@siddhi.test" for i in range(1, 201)]
+        guardian_users = []
+        for email in guardian_emails:
+            name = f"Guardian {email.split('@')[0].replace('guardian', '').title()}"
+            pwd = "SiddhiGuardian2026!"
+            user = make_user(email, name, pwd, phone="555-0200")
+            add_membership(user.id, "guardian")
+            guardian_users.append(user)
+        # Track children per guardian for credentials output
+        guardian_children: dict[uuid.UUID, list[dict]] = {guardian.id: [] for guardian in guardian_users}
+        # Staff users for assignments
+        # Staff users for assignments (generated above)
+        educator_users = [users[email] for email in sorted([e for e in users if e.startswith('educator')])]
+        therapist_users = [users[email] for email in sorted([e for e in users if e.startswith('therapist')])]
+        psychologist_users = [users[email] for email in sorted([e for e in users if e.startswith('psychologist')])]
+        psychiatrist_users = [users[email] for email in sorted([e for e in users if e.startswith('psychiatrist')])]
+        for i, (admission, student_id) in enumerate(db.query(Student.admission_number, Student.id).filter(Student.school_id == school.id).all()):
+            guardian = guardian_users[i % len(guardian_users)]
+            # Link guardian to student
+            link = GuardianStudentLink(
+                school_id=school.id,
+                guardian_user_id=guardian.id,
+                student_id=student_id,
+                relationship_label="Parent",
+                is_primary=True,
+                is_active=True,
+            )
+            db.add(link)
+            # Optionally assign a second guardian for ~20% of students
+            if i % 5 == 0:  # roughly 20% of students get a second guardian
+                # Choose a different guardian (next in list)
+                second_guardian = guardian_users[(i + 1) % len(guardian_users)]
+                second_link = GuardianStudentLink(
+                    school_id=school.id,
+                    guardian_user_id=second_guardian.id,
+                    student_id=student_id,
+                    relationship_label="Secondary",
+                    is_primary=False,
+                    is_active=True,
+                )
+                db.add(second_link)
+                # Record child info for second guardian as well
+                child = db.query(Student).filter(Student.id == student_id).one()
+                guardian_children[second_guardian.id].append({
+                    "admission_number": child.admission_number,
+                    "full_name": child.full_name,
+                })
+            # Record child info for credentials
+            child = db.query(Student).filter(Student.id == student_id).one()
+            guardian_children[guardian.id].append({
+                "admission_number": child.admission_number,
+                "full_name": child.full_name,
+            })
+            # Assign staff to student
 
-        # Goal 1: Academic
-        goal1 = IEPGoal(
-            school_id=school.id,
-            iep_plan_id=plan1.id,
-            student_id=student1.id,
-            domain="academic",
-            annual_goal="Aarav will read 40 sight words and decode 3-letter CVC words with 80% accuracy.",
-            teaching_strategies="Phonetic flashcards, tactile sand writing, daily 15-minute 1-on-1 reading drill",
-            responsible_staff_user_id=edu1_user.id,
-            timeline="10 months (June 2026 - April 2027)",
-            evaluation_method="Bi-weekly sight word inventory and running reading records",
-            status="in_progress",
-            created_by_user_id=edu1_user.id
-        )
-        db.add(goal1)
-        db.commit()
+            # Assign staff to student with round‑robin selection
+            educator = educator_users[i % len(educator_users)]
 
-        obj1_1 = GoalObjective(school_id=school.id, goal_id=goal1.id, objective_text="Identify 15 initial sight words independently", sequence_number=1, target_date=date(2026, 9, 30))
-        obj1_2 = GoalObjective(school_id=school.id, goal_id=goal1.id, objective_text="Decode 20 CVC short-vowel words", sequence_number=2, target_date=date(2026, 12, 15))
-        obj1_3 = GoalObjective(school_id=school.id, goal_id=goal1.id, objective_text="Read simple 3-word sentences fluently", sequence_number=3, target_date=date(2027, 3, 31))
-        db.add_all([obj1_1, obj1_2, obj1_3])
-        db.commit()
-
-        # Goal 2: Communication
-        goal2 = IEPGoal(
-            school_id=school.id,
-            iep_plan_id=plan1.id,
-            student_id=student1.id,
-            domain="communication",
-            annual_goal="Aarav will initiate a 3-word communicative request using AAC or verbal speech in 4 out of 5 opportunities.",
-            teaching_strategies="Prompt fading, natural environment teaching during free play, PECS/AAC modeling",
-            responsible_staff_user_id=therapist_user.id,
-            timeline="10 months",
-            evaluation_method="Weekly SLP opportunity log and AAC app analytics",
-            status="in_progress",
-            created_by_user_id=edu1_user.id
-        )
-        db.add(goal2)
-        db.commit()
-
-        # Goal 3: Social Skills
-        goal3 = IEPGoal(
-            school_id=school.id,
-            iep_plan_id=plan1.id,
-            student_id=student1.id,
-            domain="social_skills",
-            annual_goal="Aarav will participate in a structured peer turn-taking game for 10 minutes with minimal verbal prompts.",
-            teaching_strategies="Social stories, peer buddy system, visual turn-taking card",
-            responsible_staff_user_id=edu1_user.id,
-            timeline="10 months",
-            evaluation_method="Direct teacher observation rubric during circle time",
-            status="achieved",
-            created_by_user_id=edu1_user.id
-        )
-        db.add(goal3)
-        db.commit()
-
-        # 8. Progress Entries
-        prog_entries = [
-            ProgressEntry(school_id=school.id, student_id=student1.id, goal_id=goal1.id, term="baseline", rating=1, observation="Baseline assessed: Aarav recognized 5 sight words with full teacher prompting.", assessed_by_user_id=edu1_user.id, observed_at=date(2026, 6, 25)),
-            ProgressEntry(school_id=school.id, student_id=student1.id, goal_id=goal1.id, term="term_1", rating=2, observation="Term 1: Reads 18 sight words with moderate prompting; begins sounding out 'cat' and 'mat'.", assessed_by_user_id=edu1_user.id, observed_at=date(2026, 9, 28)),
-            ProgressEntry(school_id=school.id, student_id=student1.id, goal_id=goal1.id, term="term_2", rating=3, observation="Term 2: Reads 30 sight words with minimal prompting; decodes CVC words reliably.", assessed_by_user_id=edu1_user.id, observed_at=date(2026, 12, 18)),
-
-            ProgressEntry(school_id=school.id, student_id=student1.id, goal_id=goal2.id, term="baseline", rating=1, observation="Baseline: Requests limited to 1 word ('water') with physical guiding.", assessed_by_user_id=therapist_user.id, observed_at=date(2026, 6, 26)),
-            ProgressEntry(school_id=school.id, student_id=student1.id, goal_id=goal2.id, term="term_1", rating=2, observation="Term 1: Constructs 2-word AAC phrases ('want ball') in 3 out of 5 trials.", assessed_by_user_id=therapist_user.id, observed_at=date(2026, 9, 29)),
-
-            ProgressEntry(school_id=school.id, student_id=student1.id, goal_id=goal3.id, term="baseline", rating=0, observation="Baseline: Avoids peer group activities; retreated to corner.", assessed_by_user_id=edu1_user.id, observed_at=date(2026, 6, 27)),
-            ProgressEntry(school_id=school.id, student_id=student1.id, goal_id=goal3.id, term="term_1", rating=2, observation="Term 1: Sits in circle time with peer buddy for 5 minutes.", assessed_by_user_id=edu1_user.id, observed_at=date(2026, 9, 25)),
-            ProgressEntry(school_id=school.id, student_id=student1.id, goal_id=goal3.id, term="term_2", rating=3, observation="Term 2: Participates in board game with 2 peers with occasional prompt.", assessed_by_user_id=edu1_user.id, observed_at=date(2026, 12, 15)),
-            ProgressEntry(school_id=school.id, student_id=student1.id, goal_id=goal3.id, term="term_3", rating=4, observation="Term 3: Successfully completes 10-minute turn taking game independently.", assessed_by_user_id=edu1_user.id, observed_at=date(2027, 3, 20)),
-        ]
-        db.add_all(prog_entries)
-        db.commit()
-
-        # 9. Therapy Sessions
-        therapy_sess = [
-            TherapySession(school_id=school.id, student_id=student1.id, goal_id=goal2.id, therapy_type="speech_therapy", therapist_user_id=therapist_user.id, session_date=date(2026, 10, 5), duration_minutes=45, progress_notes="Practiced AAC multi-word phrase building for snacks. Aarav was engaged and completed 8 trials.", outcome="High motivation with visual food tokens", next_steps="Generalize to asking for art supplies", guardian_visible=True),
-            TherapySession(school_id=school.id, student_id=student1.id, goal_id=goal2.id, therapy_type="speech_therapy", therapist_user_id=therapist_user.id, session_date=date(2026, 10, 12), duration_minutes=45, progress_notes="Incorporated peer vocal imitation games. Vocalized vowel sounds clearly.", outcome="Vowel sounds clear on /a/ and /o/", next_steps="Work on bilabial consonant /m/ and /b/", guardian_visible=True),
-            TherapySession(school_id=school.id, student_id=student1.id, therapy_type="occupational_therapy", therapist_user_id=therapist_user.id, session_date=date(2026, 10, 19), duration_minutes=40, progress_notes="Sensory diet and obstacle course balance beam. Calmed down significantly after deep pressure beanbag compression.", outcome="Decreased hand-flapping post-session", next_steps="Teach classroom teacher 5-minute pre-math sensory routine", guardian_visible=True),
-        ]
-        db.add_all(therapy_sess)
-        db.commit()
-
-        # 10. Accommodations
-        accommodations = [
-            Accommodation(school_id=school.id, student_id=student1.id, area="classroom", accommodation="Preferential seating near teacher desk away from hallway door noise", modification="Reduced number of workbook problems per page (4 instead of 10)", assistive_technology="Noise-cancelling headphones during independent study", responsible_staff_user_id=edu1_user.id, effective_from=date(2026, 6, 1), is_active=True),
-            Accommodation(school_id=school.id, student_id=student1.id, area="examination", accommodation="25% extra time and quiet separate testing room", modification="Oral / AAC demonstration allowed in lieu of written answers", assistive_technology="Tablet with customized high-contrast font", responsible_staff_user_id=edu1_user.id, effective_from=date(2026, 6, 1), is_active=True),
-            Accommodation(school_id=school.id, student_id=student1.id, area="communication", accommodation="Visual schedule strip attached to student desk", modification="None", assistive_technology="Dedicated iPad with AAC communication software", responsible_staff_user_id=therapist_user.id, effective_from=date(2026, 6, 1), is_active=True),
-        ]
-        db.add_all(accommodations)
-        db.commit()
-
-        # 11. Parent Interactions
-        interactions = [
-            ParentInteraction(school_id=school.id, student_id=student1.id, guardian_user_id=guardian1_user.id, recorded_by_user_id=edu1_user.id, interaction_date=date(2026, 7, 10), mode="meeting", discussion_points="IEP Goal review meeting with Mrs. Sunita Patel. Discussed Aarav's sensory adaptations and reading targets.", action_taken="Agreed to send daily visual routine chart home; speech therapist provided home AAC tips.", acknowledgement_status="acknowledged", acknowledged_at=datetime(2026, 7, 10, 16, 30, tzinfo=timezone.utc)),
-            ParentInteraction(school_id=school.id, student_id=student1.id, guardian_user_id=guardian1_user.id, recorded_by_user_id=edu1_user.id, interaction_date=date(2026, 10, 15), mode="call", discussion_points="Term 1 progress check-in call. Discussed significant improvement in sight word recognition and calmer transition periods.", action_taken="Parent noted Aarav is using the phrase 'want water' at home independently.", acknowledgement_status="acknowledged", acknowledged_at=datetime(2026, 10, 15, 17, 0, tzinfo=timezone.utc)),
-        ]
-        db.add_all(interactions)
-        db.commit()
-
-        # 12. Assessment Records
-        assessments = [
-            AssessmentRecord(school_id=school.id, student_id=student1.id, assessment_type="educational", domain="academic", assessment_date=date(2026, 6, 15), assessor_user_id=edu1_user.id, summary="Comprehensive psycho-educational assessment. Student exhibits strong visual-spatial abilities and needs structured multi-sensory support for phonetic decoding.", recommendations="Implement 1-on-1 reading intervention with tactile letters and visual schedules.", guardian_visible=True, next_review_date=date(2027, 4, 15)),
-            AssessmentRecord(school_id=school.id, student_id=student1.id, assessment_type="psychological", domain="cognitive_skills", assessment_date=date(2026, 6, 18), assessor_user_id=psych_user.id, summary="Standardized developmental evaluation. Mild-to-moderate ASD symptoms confirmed; high emotional responsiveness to positive reinforcement.", recommendations="Provide scheduled quiet sensory breaks and social story preparatory work before transitions.", guardian_visible=False, next_review_date=date(2027, 6, 18)),
-        ]
-        db.add_all(assessments)
-        db.commit()
-
-        # 13. Attendance Records
-        for i in range(15):
-            att_date = date(2026, 10, 1) + timedelta(days=i)
-            if att_date.weekday() < 5:  # Monday to Friday
-                status_val = "present" if i != 8 else "absent"
-                reason_val = None if i != 8 else "Mild fever reported by guardian"
+            therapist = therapist_users[i % len(therapist_users)]
+            psychologist = psychologist_users[i % len(psychologist_users)]
+            psychiatrist = psychiatrist_users[i % len(psychiatrist_users)]
+            db.add(StaffStudentAssignment(
+                school_id=school.id,
+                staff_user_id=educator.id,
+                student_id=student_id,
+                assignment_type="special_educator",
+                is_active=True,
+            ))
+            db.add(StaffStudentAssignment(
+                school_id=school.id,
+                staff_user_id=therapist.id,
+                student_id=student_id,
+                assignment_type="therapist",
+                is_active=True,
+            ))
+            db.add(StaffStudentAssignment(
+                school_id=school.id,
+                staff_user_id=psychologist.id,
+                student_id=student_id,
+                assignment_type="psychologist",
+                is_active=True,
+            ))
+            db.add(StaffStudentAssignment(
+                school_id=school.id,
+                staff_user_id=psychiatrist.id,
+                student_id=student_id,
+                assignment_type="psychiatrist",
+                is_active=True,
+            ))
+            # PLOP records for each domain
+            domains = ["academic", "communication", "social_skills", "behaviour", "motor_skills", "cognitive_skills", "adl", "emotional_development", "vocational_skills"]
+            for domain in domains:
+                db.add(PresentLevelRecord(
+                    school_id=school.id,
+                    student_id=student_id,
+                    domain=domain,
+                    current_performance="Baseline",
+                    assessment_method="Observation",
+                    assessed_by_user_id=educator.id,
+                    assessed_at=date.today(),
+                    guardian_visible=True,
+                ))
+            # IEP Plan and goals
+            iep_plan = IEPPlan(
+                school_id=school.id,
+                student_id=student_id,
+                academic_year="2026-2027",
+                start_date=date.today(),
+                end_date=date.today().replace(year=date.today().year + 1),
+                status="active",
+                version=1,
+                created_by_user_id=educator.id,
+            )
+            db.add(iep_plan)
+            db.flush()
+            for g_idx in range(2):
+                goal = IEPGoal(
+                    school_id=school.id,
+                    iep_plan_id=iep_plan.id,
+                    student_id=student_id,
+                    domain=domains[g_idx % len(domains)],
+                    annual_goal=f"Goal {g_idx+1}",
+                    teaching_strategies="Strategy A, Strategy B",
+                    responsible_staff_user_id=educator.id,
+                    timeline="2026-12-31",
+                    evaluation_method="Observational",
+                    status="not_started",
+                    created_by_user_id=educator.id,
+                )
+                db.add(goal)
+                db.flush()
+                # One objective per goal
+                db.add(GoalObjective(
+                    school_id=school.id,
+                    goal_id=goal.id,
+                    objective_text=f"Objective for goal {g_idx+1}",
+                    sequence_number=1,
+                    target_date=date.today().replace(month=12, day=31),
+                    success_criteria="Meets criteria",
+                ))
+                # Progress entries (baseline and term_1)
+                for term, rating in [("baseline", 2), ("term_1", 3)]:
+                    db.add(ProgressEntry(
+                        school_id=school.id,
+                        student_id=student_id,
+                        goal_id=goal.id,
+                        objective_id=None,
+                        term=term,
+                        rating=rating,
+                        observation=f"Observed {term}",
+                        assessed_by_user_id=educator.id,
+                        observed_at=date.today(),
+                    ))
+            for ts_idx in range(2):
+                db.add(TherapySession(
+                    school_id=school.id,
+                    student_id=student_id,
+                    goal_id=None,
+                    therapy_type="speech_therapy" if ts_idx % 2 == 0 else "occupational_therapy",
+                    therapist_user_id=therapist.id,
+                    session_date=date.today(),
+                    duration_minutes=60,
+                    progress_notes="Session notes",
+                    outcome="Positive",
+                    next_steps="Continue",
+                    guardian_visible=True,
+                ))
+                # Add an assessment record visible to guardians
+                db.add(AssessmentRecord(
+                    school_id=school.id,
+                    student_id=student_id,
+                    assessment_type="initial",
+                    domain="academic",
+                    assessment_date=date.today(),
+                    assessor_user_id=educator.id,
+                    summary="Baseline academic assessment",
+                    recommendations="Continue monitoring",
+                    guardian_visible=True,
+                    next_review_date=None,
+                ))
+            for ts_idx in range(2):
+                db.add(TherapySession(
+                    school_id=school.id,
+                    student_id=student_id,
+                    goal_id=None,
+                    therapy_type="speech_therapy" if ts_idx % 2 == 0 else "occupational_therapy",
+                    therapist_user_id=therapist.id,
+                    session_date=date.today(),
+                    duration_minutes=60,
+                    progress_notes="Session notes",
+                    outcome="Positive",
+                    next_steps="Continue",
+                    guardian_visible=True,
+                ))
+            # Accommodation
+            db.add(Accommodation(
+                school_id=school.id,
+                student_id=student_id,
+                area="examination",
+                accommodation="Extended test time",
+                modification=None,
+                assistive_technology=None,
+                responsible_staff_user_id=educator.id,
+                effective_from=date.today(),
+                effective_to=None,
+                is_active=True,
+            ))
+            # Attendance for past 5 days
+            for d_offset in range(5):
+                att_date = date.today().fromordinal(date.today().toordinal() - d_offset)
                 db.add(AttendanceRecord(
                     school_id=school.id,
-                    student_id=student1.id,
+                    student_id=student_id,
                     attendance_date=att_date,
-                    status=status_val,
-                    reason=reason_val,
-                    recorded_by_user_id=edu1_user.id
+                    status="present",
+                    reason=None,
+                    recorded_by_user_id=educator.id,
                 ))
+            # IEP Review and approvals
+            review = IEPReview(
+                school_id=school.id,
+                student_id=student_id,
+                iep_plan_id=iep_plan.id,
+                review_type="quarterly",
+                scheduled_date=date.today(),
+                status="scheduled",
+                created_by_user_id=educator.id,
+            )
+            db.add(review)
+            db.flush()
+            for required_role in ["special_educator", "school_head", "guardian"]:
+                db.add(IEPApproval(
+                    school_id=school.id,
+                    iep_review_id=review.id,
+                    approver_user_id=educator.id,
+                    required_role=required_role,
+                    status="pending",
+                ))
+        # End of student loop
         db.commit()
-
-        # 14. IEP Review & Approvals
-        review1 = IEPReview(
-            school_id=school.id,
-            student_id=student1.id,
-            iep_plan_id=plan1.id,
-            review_type="quarterly",
-            scheduled_date=date(2026, 10, 15),
-            conducted_at=datetime(2026, 10, 15, 11, 0, tzinfo=timezone.utc),
-            review_notes="Quarter 1 review held. Student met social turn-taking milestone early; reading goal progressing on schedule.",
-            status="approved",
-            created_by_user_id=edu1_user.id
-        )
-        db.add(review1)
-        db.commit()
-
-        approvals = [
-            IEPApproval(school_id=school.id, iep_review_id=review1.id, approver_user_id=edu1_user.id, required_role="special_educator", status="approved", comment="Goals on track, recommending continuation of current strategies.", decision_at=datetime(2026, 10, 15, 12, 0, tzinfo=timezone.utc)),
-            IEPApproval(school_id=school.id, iep_review_id=review1.id, approver_user_id=head_user.id, required_role="school_head", status="approved", comment="Reviewed and approved by administration.", decision_at=datetime(2026, 10, 16, 9, 30, tzinfo=timezone.utc)),
-            IEPApproval(school_id=school.id, iep_review_id=review1.id, approver_user_id=guardian1_user.id, required_role="guardian", status="approved", comment="Very pleased with Aarav's progress in communication.", decision_at=datetime(2026, 10, 16, 14, 0, tzinfo=timezone.utc)),
-        ]
-        db.add_all(approvals)
-        db.commit()
-
-        print("Successfully seeded all synthetic demo data into PostgreSQL!")
-
-    except Exception as e:
-        db.rollback()
-        print(f"Error seeding demo database: {e}")
-        raise
+        # Write credentials to JSON file (added to .gitignore)
+        cred_path = "seed_credentials.json"
+        # Build guardian credentials list
+        guardian_credentials = []
+        for guardian in guardian_users:
+            guardian_credentials.append({
+                "role": "guardian",
+                "email": guardian.email,
+                "password": "SiddhiGuardian2026!",
+                "linked_children": guardian_children.get(guardian.id, []),
+            })
+        # Combine with student credentials
+        output = {
+            "students": all_credentials,
+            "guardians": guardian_credentials,
+        }
+        with open(cred_path, "w", encoding="utf-8") as f:
+            json.dump(output, f, indent=2, default=str)
+        # Print concise info
+        print("=== Seeded Student Credentials (first 10) ===")
+        for cred in all_credentials[:10]:
+            print(f"{cred['admission_number']}: {cred['email']} / {cred['password']} (Grade: {cred['grade_class']})")
+        print(f"... {len(all_credentials)-10} more students seeded ...")
+        print(f"Full credential list written to {cred_path}")
+        print("Seeding complete: 500 synthetic students, staff, guardians, and full demo data.")
+        # Write credentials to JSON file (added to .gitignore)
+        cred_path = "seed_credentials.json"
+        with open(cred_path, "w", encoding="utf-8") as f:
+            json.dump(all_credentials, f, indent=2, default=str)
+        # Print concise table to console
+        print("=== Seeded Student Credentials ===")
+        for cred in all_credentials[:10]:  # show first 10 for brevity
+            print(f"{cred['admission_number']}: {cred['email']} / {cred['password']} (Grade: {cred['grade_class']})")
+        print(f"... {len(all_credentials)-10} more students seeded ...")
+        print(f"Full list written to {cred_path}")
+        print("Seeding complete: 500 synthetic students, staff, guardians, and school.")
     finally:
         db.close()
-
 
 if __name__ == "__main__":
     seed_database()

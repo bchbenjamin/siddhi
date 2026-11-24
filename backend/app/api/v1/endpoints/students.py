@@ -78,7 +78,11 @@ def list_students(
         q = q.filter(Student.id.in_(assigned_ids))
 
     if search:
-        q = q.filter(Student.full_name.ilike(f"%{search}%"))
+        search_term = f"%{search}%"
+        q = q.filter(
+            (Student.full_name.ilike(search_term)) |
+            (Student.admission_number.ilike(search_term))
+        )
     if grade_class:
         q = q.filter(Student.grade_class == grade_class)
 
@@ -194,6 +198,12 @@ def update_student(
     student = verify_student_access(student_id, ctx, db, for_write=True)
 
     update_data = payload.model_dump(exclude_unset=True)
+    # Prevent overwriting encrypted UDID with masked placeholder
+    if "udid_number_encrypted" in update_data and isinstance(update_data["udid_number_encrypted"], str) and update_data["udid_number_encrypted"].startswith("****"):
+        update_data.pop("udid_number_encrypted")
+    # Restrict diagnosis field updates to roles that are allowed to see it
+    if "diagnosis" in update_data and ctx.active_role not in RESTRICTED_FIELDS_ROLES:
+        update_data.pop("diagnosis")
     for key, val in update_data.items():
         setattr(student, key, val)
     db.commit()
@@ -212,7 +222,8 @@ def get_student_guardians(
     ctx: AuthContext = Depends(get_current_user_context),
     db: Session = Depends(get_db),
 ):
-    if ctx.active_role not in ("school_admin", "school_head", "special_educator"):
+    if ctx.active_role not in ("school_admin", "school_head", "special_educator", "therapist", "psychologist"):
+        raise HTTPException(status_code=403, detail="Not authorized")
         raise HTTPException(status_code=403, detail="Not authorized")
 
     verify_student_access(student_id, ctx, db)

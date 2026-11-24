@@ -20,11 +20,11 @@ def upgrade() -> None:
     # entries before adding the database-level guard so the migration is safe.
     op.execute("UPDATE therapy_sessions SET duration_minutes = 60 WHERE duration_minutes > 480")
     op.execute("UPDATE therapy_sessions SET duration_minutes = 1 WHERE duration_minutes < 1")
-    op.create_check_constraint(
-        'ck_therapy_sessions_duration_minutes',
-        'therapy_sessions',
-        sa.text('duration_minutes BETWEEN 1 AND 480'),
-    )
+    with op.batch_alter_table('therapy_sessions') as batch_op:
+        batch_op.create_check_constraint(
+            'ck_therapy_sessions_duration_minutes',
+            sa.text('duration_minutes BETWEEN 1 AND 480'),
+        )
 
 
 def downgrade() -> None:

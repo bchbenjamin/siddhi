@@ -14,9 +14,17 @@ playwright-report/
 test-results/
 var/uploads/
 *.sqlite3
+seed_credentials.json
 *.pyc
 .DS_Store
-Dev_notes.md
+# IDE/editor files
+.idea/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
 .vercel
 .env*
 

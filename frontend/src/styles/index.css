@@ -25,15 +25,30 @@ body {
   letter-spacing: 0.01em;
 }
 
-h1, h2, h3, h4, .font-display {
+h1,
+h2,
+h3,
+h4,
+.font-display {
   font-family: var(--font-cranny);
   font-weight: 400;
   letter-spacing: -0.007em;
 }
 
-button, input, select, textarea { font: inherit; }
-button { cursor: pointer; }
-input, select, textarea {
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+input,
+select,
+textarea {
   border-color: var(--color-pale-stone);
   border-radius: 8px;
   background-color: #fff;
@@ -46,14 +61,31 @@ input, select, textarea {
 }
 
 /* The product is built from flat planes, warm neutrals and hairline rules. */
-[class*="shadow-"] { box-shadow: none !important; }
-[class*="border-bone"], [class*="border-pale-sage"], [class*="border-stone-border"] { border-color: var(--color-pale-stone); }
-[class*="rounded-xl"], [class*="rounded-2xl"] { border-radius: 8px; }
+[class*="shadow-"] {
+  box-shadow: none !important;
+}
 
-::selection { background: #ff3b0024; color: var(--color-ink); }
+[class*="border-bone"],
+[class*="border-pale-sage"],
+[class*="border-stone-border"] {
+  border-color: var(--color-pale-stone);
+}
+
+[class*="rounded-xl"],
+[class*="rounded-2xl"] {
+  border-radius: 8px;
+}
+
+::selection {
+  background: #ff3b0024;
+  color: var(--color-ink);
+}
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -64,13 +96,23 @@ input, select, textarea {
 
 /* Enable browser-managed transitions for same-origin full-document navigations too. */
 @media (prefers-reduced-motion: no-preference) {
-  @view-transition { navigation: auto; }
+  @view-transition {
+    navigation: auto;
+  }
 }
 
 /* Keep the app chrome stationary while the workspace content transitions. */
-.workspace-header { view-transition-name: workspace-header; }
-.workspace-sidebar { view-transition-name: workspace-sidebar; }
-.workspace-page { view-transition-name: workspace-page; }
+.workspace-header {
+  view-transition-name: workspace-header;
+}
+
+.workspace-sidebar {
+  view-transition-name: workspace-sidebar;
+}
+
+.workspace-page {
+  view-transition-name: workspace-page;
+}
 
 ::view-transition-old(root),
 ::view-transition-new(root),
@@ -89,27 +131,53 @@ input, select, textarea {
 :root[data-navigation-direction="forward"]::view-transition-old(workspace-page) {
   animation: siddhi-page-exit-forward 180ms ease both;
 }
+
 :root[data-navigation-direction="forward"]::view-transition-new(workspace-page) {
   animation: siddhi-page-enter-forward 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
 :root[data-navigation-direction="back"]::view-transition-old(workspace-page) {
   animation: siddhi-page-exit-back 180ms ease both;
 }
+
 :root[data-navigation-direction="back"]::view-transition-new(workspace-page) {
   animation: siddhi-page-enter-back 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes siddhi-page-exit-forward {
-  to { opacity: 0.82; transform: translateX(-16px); }
+  to {
+    opacity: 0.82;
+    transform: translateX(-16px);
+  }
 }
+
 @keyframes siddhi-page-enter-forward {
-  from { opacity: 0.82; transform: translateX(24px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0.82;
+    transform: translateX(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
+
 @keyframes siddhi-page-exit-back {
-  to { opacity: 0.82; transform: translateX(16px); }
+  to {
+    opacity: 0.82;
+    transform: translateX(16px);
+  }
 }
+
 @keyframes siddhi-page-enter-back {
-  from { opacity: 0.82; transform: translateX(-24px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0.82;
+    transform: translateX(-24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }

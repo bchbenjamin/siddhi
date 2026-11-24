@@ -96,7 +96,10 @@ export async function getData(path: string[], request: Request): Promise<any> {
       where += ' AND EXISTS (SELECT 1 FROM staff_student_assignments a WHERE a.student_id=s.id AND a.staff_user_id=$2 AND a.school_id=$1 AND a.is_active=TRUE)';
       params.push(actor.id);
     }
-    if (search) { params.push(`%${search}%`); where += ` AND s.full_name ILIKE $${params.length}`; }
+    if (search) {
+    params.push(`%${search}%`);
+    where += ` AND (s.full_name ILIKE $${params.length} OR s.admission_number ILIKE $${params.length})`;
+}
     if (grade) { params.push(grade); where += ` AND s.grade_class=$${params.length}`; }
     const count = await one(`SELECT COUNT(*)::int AS total FROM students s WHERE ${where}`, params);
     params.push(pageSize, (page - 1) * pageSize);

@@ -62,11 +62,10 @@ export default function LoginPage() {
               key={m}
               type="button"
               onClick={() => setMode(m)}
-              className={`flex-1 py-1.5 text-sm font-medium rounded-full transition-colors ${
-                mode === m
-                  ? 'bg-white text-ink-black shadow-sm'
-                  : 'text-slate-gray hover:text-ink-black'
-              }`}
+              className={`flex-1 py-1.5 text-sm font-medium rounded-full transition-colors ${mode === m
+                ? 'bg-white text-ink-black shadow-sm'
+                : 'text-slate-gray hover:text-ink-black'
+                }`}
             >
               {m === 'staff' ? 'School Staff' : m === 'guardian' ? 'Guardian' : 'Student'}
             </button>
@@ -94,7 +93,7 @@ export default function LoginPage() {
                 id="identifier"
                 type={mode === 'guardian' ? 'email' : 'text'}
                 autoComplete={mode === 'guardian' ? 'email' : 'username'}
-                placeholder={mode === 'guardian' ? 'you@example.com' : mode === 'student' ? 'ADM-2026-001' : 'FAC-0001'}
+                placeholder={mode === 'guardian' ? 'you@example.com' : mode === 'student' ? 'ADM-XXXX' : 'FAC-0001'}
                 error={!!errors.identifier}
                 {...register('identifier')}
               />

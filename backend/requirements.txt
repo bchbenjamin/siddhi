@@ -1,4 +1,5 @@
 fastapi[standard]
+uvicorn[standard]
 sqlalchemy>=2.0
 psycopg[binary]
 alembic
@@ -12,3 +13,4 @@ ruff
 pytest
 pytest-cov
 httpx
+faker

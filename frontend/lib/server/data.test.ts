@@ -105,7 +105,7 @@ describe('Next.js data API authorization', () => {
 
   it("returns only the authenticated student's own portal profile", async () => {
     currentUserMock.mockResolvedValue({ ...actor('student'), landing_route: '/student' });
-    const query = vi.fn().mockResolvedValue({ rows: [{ id: 'student-1', full_name: 'Aarav Patel', admission_number: 'ADM-2026-001', grade_class: 'Grade 3-B' }], rowCount: 1 });
+    const query = vi.fn().mockResolvedValue({ rows: [{ id: 'student-1', full_name: 'Aarav Patel', admission_number: 'ADM-XXXX', grade_class: 'Grade 3-B' }], rowCount: 1 });
     databaseMock.mockReturnValue({ query } as never);
     const result = await getData(['student', 'me'], new Request('https://siddhi.test/api/v1/student/me'));
     expect(result.full_name).toBe('Aarav Patel');
